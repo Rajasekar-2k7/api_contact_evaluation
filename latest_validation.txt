@@ -1,0 +1,12 @@
+[OK] api_contract_evolution: Ready for multi-mode deployment
+
+Supported deployment modes:
+  [YES] docker
+  [YES] openenv_serve
+  [YES] uv_run
+  [YES] python_module
+
+Usage examples:
+  cd api_contract_evolution && uv run server
+  cd api_contract_evolution && openenv build
+  cd api_contract_evolution && openenv push

@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Ruff / linting cache
+.ruff_cache/
+
+# Test artifacts
+*.log
+*.tmp
+tmp_env/
+
+# Secrets — NEVER commit these
+hackathon-keys.txt
+*.key
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Scratch test files
+test_endpoints.py
