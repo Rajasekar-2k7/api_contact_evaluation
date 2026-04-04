@@ -174,14 +174,20 @@ def grade_phase_3_migrate(action_data: Dict, ground_truth: Dict) -> Dict:
     else:
         alt_lower = alternative.lower()
         good_words = ["parallel", "support both", "alias", "deprecat",
-                      "transition", "versioned", "gradual", "compatible"]
-        bad_words = ["immediately remove", "force update", "hard cutover"]
+                      "transition", "versioned", "gradual", "compatible", "header", "routing"]
+        bad_words = ["immediately remove", "force update", "hard cutover", "just delete"]
         good_count = sum(1 for w in good_words if w in alt_lower)
         has_bad = any(w in alt_lower for w in bad_words)
+        
+        # Deep Sequence Check: Require clients to be updated *before* sunsetting legacy
+        has_sequence_awareness = any(seq in all_migration_text for seq in [
+            "before deprecating", "first update", "migrate clients completely", "until all traffic"
+        ])
+        
         if has_bad:
             alt_score = 0.1
         elif good_count >= 2:
-            alt_score = 1.0
+            alt_score = 1.0 if has_sequence_awareness else 0.8
         elif good_count == 1:
             alt_score = 0.6
         else:

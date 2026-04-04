@@ -173,9 +173,10 @@ Respond with ONLY this JSON:
 
 def call_llm(prompt: str) -> Dict:
     """Call the LLM with exponential backoff and absolute timeout bounds."""
-    for attempt in range(4):
+    # Cap maximum retries to aggressively protect against 20-minute constraint limit
+    for attempt in range(3):
         try:
-            # 120s timeout ensures we don't blow past the 20 minute limit
+            # 45s timeout ensures fast failure and prevents episode blockages
             response = llm_client.chat.completions.create(
                 model=MODEL_NAME,
                 messages=[
@@ -184,7 +185,7 @@ def call_llm(prompt: str) -> Dict:
                 ],
                 max_tokens=MAX_TOKENS,
                 temperature=TEMPERATURE,
-                timeout=120.0  
+                timeout=45.0
             )
             content = response.choices[0].message.content.strip()
             
@@ -205,7 +206,7 @@ def call_llm(prompt: str) -> Dict:
             return FALLBACK_ACTION
         except Exception as e:
             log(f"LLM error on attempt {attempt+1}: {e}")
-            if attempt == 3:
+            if attempt == 2:
                 log("Max retries exceeded. Using fallback action.")
                 return FALLBACK_ACTION
             time.sleep(2 ** attempt)  # exponential backoff

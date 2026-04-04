@@ -6,7 +6,7 @@
 
 """Api Contract Evolution Environment Client."""
 
-from typing import Dict, Optional
+from typing import Dict, Any, Optional
 
 from openenv.core import EnvClient
 from openenv.core.client_types import StepResult
@@ -68,7 +68,7 @@ class ApiContractEvolutionEnv(
         """
         return action.model_dump()
 
-    def _parse_result(self, payload: Dict) -> StepResult[ApiContractObservation]:
+    def _parse_result(self, payload: Dict[str, Any]) -> StepResult[ApiContractObservation]:
         """
         Parse server response into StepResult[ApiContractObservation].
 
@@ -104,7 +104,7 @@ class ApiContractEvolutionEnv(
             done=payload.get("done", False),
         )
 
-    def _parse_state(self, payload: Dict) -> ApiContractState:
+    def _parse_state(self, payload: Dict[str, Any]) -> ApiContractState:
         """
         Parse server response into ApiContractState object.
 
@@ -115,7 +115,7 @@ class ApiContractEvolutionEnv(
             ApiContractState object with full environment state
         """
         return ApiContractState(
-            episode_id=payload.get("episode_id"),
+            episode_id=payload.get("episode_id", ""),  # Provide default fallback
             step_count=payload.get("step_count", 0),
             scenario_id=payload.get("scenario_id", 1),
             scenario_name=payload.get("scenario_name", ""),

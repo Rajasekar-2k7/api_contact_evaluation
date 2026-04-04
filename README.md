@@ -83,19 +83,47 @@ The Phase 3 (`migrate`) grading logic is incredibly deep. It does not just look 
 
 ## 🕹️ Example Agent Trajectory
 
-The interaction happens sequentially over 3 steps. The dense reward mechanism fires on every client push:
+The interaction happens sequentially over 3 steps. The environment handles the state machine and ensures strict phase enforcement, while providing dense rewards at each step.
 
-1. **Step 1:** `/reset` (Initializes Episode 14a2)
-   - *Agent receives:* `spec_v1`, `spec_v2`, `client_code` (Python/JS clients)
-2. **Step 2:** Agent runs **Phase 1**
-   - *Agent pushes:* `{"action_type": "identify", "changed_fields": ["auth_token"]}`
-   - *Env returns:* `reward=0.30` (Dense partial phase reward + Feedback)
-3. **Step 3:** Agent runs **Phase 2**
-   - *Agent pushes:* `{"action_type": "classify", "is_breaking": true, "confidence": 0.95}`
-   - *Env returns:* `reward=0.40`
-4. **Step 4:** Agent runs **Phase 3**
-   - *Agent pushes:* `{"action_type": "migrate", "migration_steps": ["..."]}`
-   - *Env returns:* `done=true, cumulative_score=1.0` 🎉
+```mermaid
+sequenceDiagram
+    participant Agent
+    participant OpenEnv (HF Space)
+    Agent->>OpenEnv: POST /reset
+    OpenEnv-->>Agent: Observation (spec_v1, spec_v2, code)
+    Note over Agent: Phase 1: Identify
+    Agent->>OpenEnv: POST /step {"action_type": "identify", ...}
+    OpenEnv-->>Agent: Partial Reward + Phase 1 Feedback
+    Note over Agent: Phase 2: Classify (Confidence Testing)
+    Agent->>OpenEnv: POST /step {"action_type": "classify", ...}
+    OpenEnv-->>Agent: Partial Reward + Phase 2 Feedback
+    Note over Agent: Phase 3: Migrate (Deep Semver/Timeline logic)
+    Agent->>OpenEnv: POST /step {"action_type": "migrate", ...}
+    OpenEnv-->>Agent: Final Reward, Done=True
+```
+
+### Deep Enforcement: Phase 3 JSON Example
+Top implementations of the `migrate` action are graded on strict adherence to timeline alignment and semantic alternatives, heavily penalising "hard cutovers". A high-scoring Phase 3 payload looks like this:
+
+```json
+{
+  "action_type": "migrate",
+  "migration_steps": [
+    "Step 1: Deploy new v2 endpoints in parallel with v1.",
+    "Step 2: Monitor legacy client usage on unified logging dashboard.",
+    "Step 3: Force deprecation timeline for partner APIs.",
+    "Step 4: Cleanup legacy tables post-deprecation."
+  ],
+  "migration_timeline_days": 60,
+  "migration_risks": [
+    "Database schema split-brain during dual-write phase.",
+    "Partner integrations might ignore deprecation headers."
+  ],
+  "rollback_plan": "Instantly switch API Gateway routing back to v1 handler until data migration completes.",
+  "backwards_compatible_alternative": "Use an opt-in HTTP header `API-Version: 2026-04` instead of dropping the v1 endpoint."
+}
+```
+*Notice how deep the grader looks:* It evaluates the quality of the `backwards_compatible_alternative` field ensuring the agent actually designed a parallel runtime strategy, checks chronological sequencing (e.g. updating clients before sunsetting endpoints), and mathematically verifies `migration_timeline_days` against the environment's hidden `deprecation_window`.
 
 ## ⚡ Quick Start
 
