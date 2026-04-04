@@ -185,6 +185,10 @@ def call_llm(prompt: str) -> Dict:
         )
         content = response.choices[0].message.content.strip()
         
+        # Remove deepseek/reasoning tags if present
+        import re
+        content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
+        
         # Clean up JSON (remove markdown code blocks if present)
         if "```json" in content:
             content = content.split("```json")[1].split("```")[0].strip()
@@ -209,18 +213,20 @@ def run_scenario(scenario_id: int) -> Dict:
     
     # Phase 1: Identify
     log("Phase 1: Resetting environment...")
-    obs = reset_env(scenario_id)
-    log(f"Scenario: {obs.get('scenario_name', '')} | Difficulty: {obs.get('difficulty', '')}")
+    result0 = reset_env(scenario_id)
+    obs0 = result0.get("observation", {})
+    log(f"Scenario: {obs0.get('scenario_name', '')} | Difficulty: {obs0.get('difficulty', '')}")
     
-    prompt1 = build_phase1_prompt(obs)
+    prompt1 = build_phase1_prompt(obs0)
     log("Phase 1: Calling LLM to identify changes...")
     action1 = call_llm(prompt1)
     log(f"Phase 1 action: {json.dumps(action1, indent=2)}")
     
     result1 = step_env(action1)
-    phase1_score = result1.get("previous_phase_score", 0.0)
+    obs1 = result1.get("observation", {})
+    phase1_score = obs1.get("previous_phase_score", 0.0)
     log(f"Phase 1 score: {phase1_score:.4f}")
-    log(f"Feedback: {result1.get('previous_phase_feedback', '')}")
+    log(f"Feedback: {obs1.get('previous_phase_feedback', '')}")
     
     if result1.get("done", False):
         log("Episode ended early.")
@@ -228,14 +234,15 @@ def run_scenario(scenario_id: int) -> Dict:
     
     # Phase 2: Classify
     log("\nPhase 2: Calling LLM to classify impact...")
-    prompt2 = build_phase2_prompt(result1)
+    prompt2 = build_phase2_prompt(obs1)
     action2 = call_llm(prompt2)
     log(f"Phase 2 action: {json.dumps(action2, indent=2)}")
     
     result2 = step_env(action2)
-    phase2_score = result2.get("previous_phase_score", 0.0)
+    obs2 = result2.get("observation", {})
+    phase2_score = obs2.get("previous_phase_score", 0.0)
     log(f"Phase 2 score: {phase2_score:.4f}")
-    log(f"Feedback: {result2.get('previous_phase_feedback', '')}")
+    log(f"Feedback: {obs2.get('previous_phase_feedback', '')}")
     
     if result2.get("done", False):
         log("Episode ended after phase 2.")
@@ -243,23 +250,25 @@ def run_scenario(scenario_id: int) -> Dict:
     
     # Phase 3: Migrate
     log("\nPhase 3: Calling LLM to propose migration plan...")
-    prompt3 = build_phase3_prompt(result2)
+    prompt3 = build_phase3_prompt(obs2)
     action3 = call_llm(prompt3)
     log(f"Phase 3 action: {json.dumps(action3, indent=2)}")
     
     result3 = step_env(action3)
+    obs3 = result3.get("observation", {})
     final_score = result3.get("reward", 0.0)
-    log(f"Phase 3 score: {result3.get('previous_phase_score', 0.0):.4f}")
+    phase3_score = obs3.get("previous_phase_score", 0.0)
+    log(f"Phase 3 score: {phase3_score:.4f}")
     log(f"FINAL EPISODE SCORE: {final_score:.4f}")
     
     return {
         "scenario_id": scenario_id,
-        "scenario_name": obs.get("scenario_name", ""),
-        "difficulty": obs.get("difficulty", ""),
+        "scenario_name": obs0.get("scenario_name", ""),
+        "difficulty": obs0.get("difficulty", ""),
         "phase_scores": {
             "identify": phase1_score,
             "classify": phase2_score,
-            "migrate": result3.get("previous_phase_score", 0.0)
+            "migrate": phase3_score
         },
         "final_score": final_score
     }
