@@ -35,8 +35,8 @@ dev = [
 ]
 
 [project.scripts]
-# Hackathon validator entry point — MUST use package name with hyphen
-api-contract-evolution = "server.app:main"
+# OpenEnv validator entry point — MUST use 'server' instead of package name
+server = "server.app:main"
 
 [tool.setuptools]
 include-package-data = true

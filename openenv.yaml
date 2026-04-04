@@ -1,7 +1,9 @@
 spec_version: 1
 name: api_contract_evolution
+version: 0.1.0
 type: space
+description: "AI Agent Environment for Detecting API Breaking Changes and Proposing Migrations"
+author: "Rajasekar-2k7"
 runtime: fastapi
 app: server.app:app
 port: 7860
-

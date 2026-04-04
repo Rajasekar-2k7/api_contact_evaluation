@@ -18,15 +18,15 @@ tags:
 A benchmark RL environment for training and evaluating AI agents on
 real-world API backwards-compatibility reasoning tasks.
 
-## The Problem This Solves
+## 🌍 Why API Contract Evolution Matters
 
-When a company changes its API (like Stripe changing error codes, or
-Google deprecating endpoints), those changes can silently break thousands
-of apps. The 2019 Stripe incident: one error code rename from
-`insufficient_funds` to `payment_declined` broke 1,200 merchant
-integrations overnight at a cost of $2M+.
+When a platform evolves its API (like Stripe changing error codes, or GitHub deprecating legacy webhooks), those changes can silently break thousands of downstream applications. 
 
-This environment trains AI agents to catch these problems BEFORE deployment.
+Consider the infamous 2019 Stripe incident: renaming a single enum value from `insufficient_funds` to `payment_declined` bypassed static linting, breaking 1,200 merchant integrations overnight at a cost of millions. 
+
+Current tooling relies on brute-force OpenAPI AST diffing, which only catches syntactic breaks (like a deleted field) but misses **invisible semantic breaks** (like implicit rate limits or currency precision shifts).
+
+This environment trains RL agents to reason about both syntax *and* causal semantics. Agents must detect silent breaks, rank severity, and build a mathematically viable migration plan—the holy grail of API management.
 
 ## Environment Overview
 
@@ -56,17 +56,19 @@ Each observation includes:
 - `current_phase` — Which step the agent is on
 - `previous_phase_feedback` — What it scored on the last step
 
-## Reward Function
+The environment provides **dense partial rewards** after every step, preventing the reward-sparsity problem typical of multi-stage RL:
+- Phase 1 (Identify): 30% weight
+- Phase 2 (Classify): 40% weight
+- Phase 3 (Migrate): 30% weight
 
-The reward is computed across all 3 phases with progressive weighting:
-- Phase 1 (Identify): 30% of final score
-- Phase 2 (Classify): 40% of final score
-- Phase 3 (Migrate): 30% of final score
+### 📉 Phase 2 Innovation: Confidence Calibration
+The Phase 2 grader uses advanced confidence calibration penalization: If an agent is confident but wrong, it is penalized. If it is right but underconfident, it loses points. True reasoning requires accurate confidence intervals.
 
-**Innovation: Confidence Calibration**
-The Phase 2 grader includes confidence calibration:
-if the agent is correct AND confident → higher score
-if the agent is wrong AND confident → penalized (overconfidence is punished)
+### 🛡️ Phase 3 Semantic Verification (Deep Enforcement)
+The Phase 3 (`migrate`) grading logic is incredibly deep. It does not just look for strings; it evaluates mathematical and semantic competence:
+1. **SemVer Reasoning:** Penalizes agents if they suggest a `minor` bump when `is_breaking` is true.
+2. **Timeline Math:** Rewards agents only if `migration_timeline_days` natively aligns with the scenario's hidden `deprecation_window`.
+3. **Graceful Degradation:** Evaluates the `backwards_compatible_alternative` field structure natively, seeking dual-routing systems over hard cutovers.
 
 ## Scenarios
 
@@ -76,10 +78,26 @@ if the agent is wrong AND confident → penalized (overconfidence is punished)
 | 2 | Error Code Breaking Change | Medium | Payment Service |
 | 3 | The Fix That Breaks (Paradox) | Hard | Payment Service |
 | 4 | Auth Token Format Change | Medium | Auth Service |
-| 5 | Silent Rate Limit Semantic Change | Hard | API Gateway |
-| 6 | GraphQL Field Nullability Change | Medium | E-Commerce (GraphQL) |
+| 5 | Silent Rate Limit Semantic | Hard | API Gateway |
+| 6 | GraphQL Field Nullability | Medium | E-Commerce |
 
-## Quick Start
+## 🕹️ Example Agent Trajectory
+
+The interaction happens sequentially over 3 steps. The dense reward mechanism fires on every client push:
+
+1. **Step 1:** `/reset` (Initializes Episode 14a2)
+   - *Agent receives:* `spec_v1`, `spec_v2`, `client_code` (Python/JS clients)
+2. **Step 2:** Agent runs **Phase 1**
+   - *Agent pushes:* `{"action_type": "identify", "changed_fields": ["auth_token"]}`
+   - *Env returns:* `reward=0.30` (Dense partial phase reward + Feedback)
+3. **Step 3:** Agent runs **Phase 2**
+   - *Agent pushes:* `{"action_type": "classify", "is_breaking": true, "confidence": 0.95}`
+   - *Env returns:* `reward=0.40`
+4. **Step 4:** Agent runs **Phase 3**
+   - *Agent pushes:* `{"action_type": "migrate", "migration_steps": ["..."]}`
+   - *Env returns:* `done=true, cumulative_score=1.0` 🎉
+
+## ⚡ Quick Start
 
 ```python
 from api_contract_evolution import ApiContractEvolutionEnv, ApiContractAction

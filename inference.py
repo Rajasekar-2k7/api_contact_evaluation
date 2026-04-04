@@ -172,37 +172,44 @@ Respond with ONLY this JSON:
 
 
 def call_llm(prompt: str) -> Dict:
-    """Call the LLM and parse JSON response."""
-    try:
-        response = llm_client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[
-                {"role": "system", "content": build_system_prompt()},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=MAX_TOKENS,
-            temperature=TEMPERATURE
-        )
-        content = response.choices[0].message.content.strip()
-        
-        # Remove deepseek/reasoning tags if present
-        import re
-        content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
-        
-        # Clean up JSON (remove markdown code blocks if present)
-        if "```json" in content:
-            content = content.split("```json")[1].split("```")[0].strip()
-        elif "```" in content:
-            content = content.split("```")[1].split("```")[0].strip()
-        
-        return json.loads(content)
-        
-    except json.JSONDecodeError as e:
-        log(f"JSON parse error: {e}. Using fallback action.")
-        return FALLBACK_ACTION
-    except Exception as e:
-        log(f"LLM error: {e}. Using fallback action.")
-        return FALLBACK_ACTION
+    """Call the LLM with exponential backoff and absolute timeout bounds."""
+    for attempt in range(4):
+        try:
+            # 120s timeout ensures we don't blow past the 20 minute limit
+            response = llm_client.chat.completions.create(
+                model=MODEL_NAME,
+                messages=[
+                    {"role": "system", "content": build_system_prompt()},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=MAX_TOKENS,
+                temperature=TEMPERATURE,
+                timeout=120.0  
+            )
+            content = response.choices[0].message.content.strip()
+            
+            # Remove deepseek/reasoning tags if present
+            import re
+            content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
+            
+            # Clean up JSON (remove markdown code blocks if present)
+            if "```json" in content:
+                content = content.split("```json")[1].split("```")[0].strip()
+            elif "```" in content:
+                content = content.split("```")[1].split("```")[0].strip()
+            
+            return json.loads(content)
+            
+        except json.JSONDecodeError as e:
+            log(f"JSON parse error: {e}. Using fallback action.")
+            return FALLBACK_ACTION
+        except Exception as e:
+            log(f"LLM error on attempt {attempt+1}: {e}")
+            if attempt == 3:
+                log("Max retries exceeded. Using fallback action.")
+                return FALLBACK_ACTION
+            time.sleep(2 ** attempt)  # exponential backoff
+    return FALLBACK_ACTION
 
 
 def run_scenario(scenario_id: int) -> Dict:
