@@ -12,11 +12,11 @@ from openenv.core import EnvClient
 from openenv.core.client_types import StepResult
 from openenv.core.env_server.types import State
 
-from .models import ApiContractAction, ApiContractObservation
+from .models import ApiContractAction, ApiContractObservation, ApiContractState
 
 
 class ApiContractEvolutionEnv(
-    EnvClient[ApiContractAction, ApiContractObservation, State]
+    EnvClient[ApiContractAction, ApiContractObservation, ApiContractState]
 ):
     """
     Client for the Api Contract Evolution Environment.
@@ -104,17 +104,24 @@ class ApiContractEvolutionEnv(
             done=payload.get("done", False),
         )
 
-    def _parse_state(self, payload: Dict) -> State:
+    def _parse_state(self, payload: Dict) -> ApiContractState:
         """
-        Parse server response into State object.
+        Parse server response into ApiContractState object.
 
         Args:
             payload: JSON response from state request
 
         Returns:
-            State object with episode_id and step_count
+            ApiContractState object with full environment state
         """
-        return State(
+        return ApiContractState(
             episode_id=payload.get("episode_id"),
             step_count=payload.get("step_count", 0),
+            scenario_id=payload.get("scenario_id", 1),
+            scenario_name=payload.get("scenario_name", ""),
+            difficulty=payload.get("difficulty", "easy"),
+            current_phase=payload.get("current_phase", "identify"),
+            total_score=payload.get("total_score", 0.0),
+            phase_scores=payload.get("phase_scores", {}),
+            is_done=payload.get("is_done", False),
         )
