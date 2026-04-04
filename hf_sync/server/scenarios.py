@@ -214,9 +214,9 @@ SCENARIOS = {
             "mobile_app": (
                 "def display_payment(payment_id):\n"
                 "    r = api.get(f'/v1/payments/{payment_id}')\n"
-                "    amount_cents = r['amount']\n"
-                "    display_amount = amount_cents / 100\n"
-                "    show_on_screen(f'${display_amount:.2f}')"
+                "    raw = r['amount']\n"
+                "    display = raw / 100\n"
+                "    show_on_screen(f'${display:.2f}')"
             ),
             "web_dashboard": (
                 "async function showPayment(id) {\n"

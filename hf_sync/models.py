@@ -9,12 +9,7 @@ from typing import List, Dict, Optional, Any
 # ─── WHAT THE AGENT SENDS TO /step ──────────────────────────────────────
 
 
-class MigrationStep(Action):
-    """A single step in a migration plan."""
 
-    step_description: str = Field(default="")
-    timeline_days: int = Field(default=30)
-    risk: str = Field(default="")
 
 
 class ApiContractAction(Action):

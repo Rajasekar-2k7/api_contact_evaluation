@@ -154,7 +154,7 @@ def grade_phase_3_migrate(action_data: Dict, ground_truth: Dict) -> Dict:
     alternative = action_data.get("backwards_compatible_alternative", "")
     required_keywords = ground_truth.get("required_migration_keywords", [])
 
-    # 1. Keyword coverage in migration steps (40%)
+    # 1. Keyword coverage in migration steps (30%)
     all_migration_text = " ".join(migration_steps + risks + [rollback] + [alternative]).lower()
     if required_keywords:
         matched = sum(1 for kw in required_keywords if kw.lower() in all_migration_text)

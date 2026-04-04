@@ -6,7 +6,7 @@
 
 """Api Contract Evolution Environment Client."""
 
-from typing import Dict
+from typing import Dict, Optional
 
 from openenv.core import EnvClient
 from openenv.core.client_types import StepResult
@@ -44,6 +44,17 @@ class ApiContractEvolutionEnv(
         ... finally:
         ...     client.close()
     """
+
+    def __init__(self, base_url: str = "http://localhost:7860", **kwargs):
+        """Connect to the API Contract Evolution environment server.
+
+        Args:
+            base_url: Server URL. Defaults to http://localhost:7860 (HF Space port).
+                      Use https://rajasekar-2k7-api-contract-evolution.hf.space
+                      to connect to the live hosted environment.
+            **kwargs: Additional arguments forwarded to EnvClient.
+        """
+        super().__init__(base_url=base_url, **kwargs)
 
     def _step_payload(self, action: ApiContractAction) -> Dict:
         """
