@@ -1,7 +1,0 @@
-spec_version: 1
-name: api_contract_evolution
-type: space
-runtime: fastapi
-app: server.app:app
-port: 7860
-
