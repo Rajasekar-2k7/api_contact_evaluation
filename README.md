@@ -163,7 +163,7 @@ with ApiContractEvolutionEnv(base_url="http://localhost:7860") as client:
 ```bash
 # Windows Command Prompt — runs against the live HuggingFace Space
 set API_BASE_URL=https://api-inference.huggingface.co/v1
-set MODEL_NAME=meta-llama/Meta-Llama-3.1-8B-Instruct
+set MODEL_NAME=meta-llama/Llama-3.3-70B-Instruct
 set HF_TOKEN=your_hf_token
 set ENV_URL=https://rajasekar-2k7-api-contract-evolution.hf.space
 python inference.py
