@@ -38,3 +38,7 @@ Thumbs.db
 
 # Scratch test files
 test_endpoints.py
+
+# Optimization
+.pytest_cache/
+.antigravity/
