@@ -35,8 +35,7 @@ dev = [
 ]
 
 [project.scripts]
-# OpenEnv validator entry point — MUST use 'server' instead of package name
-server = "server.app:main"
+api-contract-evolution = "server.app:main"
 
 [tool.setuptools]
 include-package-data = true

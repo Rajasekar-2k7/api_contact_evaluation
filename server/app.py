@@ -57,8 +57,26 @@ app = create_app(
     ApiContractAction,
     ApiContractObservation,
     env_name="api_contract_evolution",
-    max_concurrent_envs=1,  # increase this number to allow more concurrent WebSocket sessions
+    max_concurrent_envs=1,
 )
+
+# ─── OVERRIDE DEFAULT ROUTES TO MATCH TESTING CRITERIA ────────────────
+
+# Define custom routes on a router to ensure they taking precedence
+from fastapi import APIRouter
+custom_router = APIRouter()
+
+@custom_router.post("/reset")
+def reset_env(scenario_id: int = 1):
+    """Reset the environment with a specific scenario_id and return a flat JSON."""
+    obs = global_env.reset(scenario_id=scenario_id)
+    return obs.model_dump()
+
+@custom_router.post("/step")
+def step_env(action: ApiContractAction):
+    """Execute a step and return a flat JSON (unwrapped from 'observation')."""
+    obs = global_env.step(action)
+    return obs.model_dump()
 
 
 # ─── BONUS ENDPOINTS (Section 6) ───────────────────────────────────────
@@ -66,7 +84,7 @@ app = create_app(
 from .scenarios import SCENARIOS
 from .graders import compute_episode_score
 
-@app.get("/replay")
+@custom_router.get("/replay")
 def replay_episode():
     """Return the full action-reward history of the current episode.
     Standard RL debugging tool for evaluators."""
@@ -81,7 +99,7 @@ def replay_episode():
     }
 
 
-@app.get("/scenarios")
+@custom_router.get("/scenarios")
 def list_scenarios():
     """List all available scenarios with metadata."""
     return {
@@ -99,16 +117,40 @@ def list_scenarios():
     }
 
 
-@app.get("/health")
+@custom_router.get("/health")
 def health_check():
+    """Verbose health check matching Phase 1: Step 1.2 criteria."""
     return {
         "status": "ok",
         "environment": "api-contract-evolution",
         "version": "1.0.0",
         "scenarios_available": len(SCENARIOS),
         "phases_per_episode": 3,
-        "domains": ["Payment Service", "Auth Service", "API Gateway"]
+        "domains": ["Payment Service", "Auth Service", "API Gateway", "E-Commerce (GraphQL)"]
     }
+
+# Include the custom router
+app.include_router(custom_router)
+
+# Forced override: Purge OpenEnv's default routes that collide with ours
+custom_paths = {r.path for r in custom_router.routes if hasattr(r, "path")}
+new_routes = []
+seen_custom = set()
+
+# We want our custom routes to be at the very front
+for route in app.router.routes:
+    path = getattr(route, "path", None)
+    if path in custom_paths:
+        # If this is one of our custom routes and we haven't added it yet, put it at the front
+        if hasattr(route, "name") and route.name in ["reset_env", "step_env", "health_check", "replay_episode", "list_scenarios"]:
+            if path not in seen_custom:
+                new_routes.insert(0, route)
+                seen_custom.add(path)
+        # Else it's a default route for a path we've overridden, so skip it
+        continue
+    new_routes.append(route)
+
+app.router.routes = new_routes
 
 
 def main(host: str = "0.0.0.0", port: int = 7860):

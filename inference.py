@@ -33,7 +33,7 @@ MODEL_NAME = os.getenv("MODEL_NAME", "meta-llama/Meta-Llama-3.1-8B-Instruct")
 HF_TOKEN = os.getenv("HF_TOKEN", "")
 ENV_URL = os.getenv("ENV_URL", "http://localhost:7860")
 
-MAX_TOKENS = 800
+MAX_TOKENS = 512
 TEMPERATURE = 0.2
 FALLBACK_ACTION = {"action_type": "identify", "changed_fields": [], "change_category": "field_added"}
 
@@ -49,18 +49,30 @@ def log(msg: str):
 
 # ─── ENVIRONMENT INTERACTION ───────────────────────────────────────────────
 
+def get_obs(response_json: Dict) -> Dict:
+    """Extract observation from response, handling both flat and wrapped formats."""
+    if "observation" in response_json:
+        return response_json["observation"]
+    return response_json
+
+
 def reset_env(scenario_id: int) -> Dict:
-    """Call /reset on the environment."""
-    r = requests.post(f"{ENV_URL}/reset", params={"scenario_id": scenario_id}, timeout=30)
+    """Call /reset on the environment, sending scenario_id via params and JSON body for robustness."""
+    r = requests.post(
+        f"{ENV_URL}/reset", 
+        params={"scenario_id": scenario_id}, 
+        json={"scenario_id": scenario_id},
+        timeout=30
+    )
     r.raise_for_status()
-    return r.json()
+    return get_obs(r.json())
 
 
 def step_env(action: Dict) -> Dict:
-    """Call /step on the environment."""
-    r = requests.post(f"{ENV_URL}/step", json={"action": action}, timeout=30)
+    """Call /step on the environment and return the extracted observation."""
+    r = requests.post(f"{ENV_URL}/step", json=action, timeout=30)
     r.raise_for_status()
-    return r.json()
+    return get_obs(r.json())
 
 
 def get_state() -> Dict:
@@ -222,7 +234,7 @@ def run_scenario(scenario_id: int) -> Dict:
     # Phase 1: Identify
     log("Phase 1: Resetting environment...")
     result0 = reset_env(scenario_id)
-    obs0 = result0.get("observation", {})
+    obs0 = result0
     log(f"Scenario: {obs0.get('scenario_name', '')} | Difficulty: {obs0.get('difficulty', '')}")
     
     prompt1 = build_phase1_prompt(obs0)
@@ -231,7 +243,7 @@ def run_scenario(scenario_id: int) -> Dict:
     log(f"Phase 1 action: {json.dumps(action1, indent=2)}")
     
     result1 = step_env(action1)
-    obs1 = result1.get("observation", {})
+    obs1 = result1
     phase1_score = obs1.get("previous_phase_score", 0.0)
     log(f"Phase 1 score: {phase1_score:.4f}")
     log(f"Feedback: {obs1.get('previous_phase_feedback', '')}")
@@ -247,7 +259,7 @@ def run_scenario(scenario_id: int) -> Dict:
     log(f"Phase 2 action: {json.dumps(action2, indent=2)}")
     
     result2 = step_env(action2)
-    obs2 = result2.get("observation", {})
+    obs2 = result2
     phase2_score = obs2.get("previous_phase_score", 0.0)
     log(f"Phase 2 score: {phase2_score:.4f}")
     log(f"Feedback: {obs2.get('previous_phase_feedback', '')}")
@@ -263,7 +275,7 @@ def run_scenario(scenario_id: int) -> Dict:
     log(f"Phase 3 action: {json.dumps(action3, indent=2)}")
     
     result3 = step_env(action3)
-    obs3 = result3.get("observation", {})
+    obs3 = result3
     final_score = result3.get("reward", 0.0)
     phase3_score = obs3.get("previous_phase_score", 0.0)
     log(f"Phase 3 score: {phase3_score:.4f}")
@@ -298,7 +310,7 @@ def main():
         try:
             result = run_scenario(scenario_id)
             all_results.append(result)
-            time.sleep(1)  # Brief pause between scenarios
+            time.sleep(0.5)  # Optimized pause between scenarios
         except Exception as e:
             log(f"ERROR in scenario {scenario_id}: {e}")
             all_results.append({

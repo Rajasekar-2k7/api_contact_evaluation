@@ -79,7 +79,7 @@ SCENARIOS = {
                 "will continue to work without any changes."
             ),
             "required_change_keywords": ["optional", "backwards compatible", "no action"],
-            "required_migration_keywords": ["no migration needed", "optional", "non-breaking"]
+            "required_migration_keywords": ["no migration needed", "optional", "non-breaking", "monitoring"]
         }
     },
 
@@ -172,7 +172,7 @@ SCENARIOS = {
                 "web_dashboard uses generic error.message — NOT affected."
             ),
             "required_change_keywords": ["hardcoded", "insufficient_funds", "renamed"],
-            "required_migration_keywords": ["parallel", "support both", "transition", "notify partner"]
+            "required_migration_keywords": ["parallel", "support both", "transition", "notify partner", "canary", "gradual rollout"]
         }
     },
 
@@ -272,7 +272,8 @@ SCENARIOS = {
             "required_change_keywords": ["cents", "dollars", "divide by 100", "behavior", "all clients"],
             "required_migration_keywords": [
                 "migrate clients first", "versioned rollout", "parallel",
-                "update mobile first", "partner notice", "db migration"
+                "update mobile first", "partner notice", "db migration",
+                "canary", "observability", "feature flag"
             ]
         }
     },
@@ -366,7 +367,7 @@ SCENARIOS = {
                 "mobile_app just passes token in header — NOT affected."
             ),
             "required_change_keywords": ["jwt", "opaque", "parse", "validate endpoint", "position"],
-            "required_migration_keywords": ["versioned endpoint", "parallel support", "migrate validation"]
+            "required_migration_keywords": ["versioned endpoint", "parallel support", "migrate validation", "feature flag", "canary"]
         }
     },
 
@@ -465,7 +466,7 @@ SCENARIOS = {
             ],
             "required_migration_keywords": [
                 "inject user_id", "cdn configuration", "exempt service accounts",
-                "monitor anonymous traffic", "gradual rollout"
+                "monitor anonymous traffic", "gradual rollout", "canary", "shadow traffic"
             ]
         }
     },
@@ -542,7 +543,7 @@ SCENARIOS = {
                 "iOS Swift decoding fails completely on null price. Python script safely uses dict.get() and is unaffected."
             ),
             "required_change_keywords": ["nullable", "null", "type", "swift", "typescript"],
-            "required_migration_keywords": ["optional field", "fallback", "update apps first", "schema versioning"]
+            "required_migration_keywords": ["optional field", "fallback", "update apps first", "schema versioning", "null check", "monitoring"]
         }
     }
 }

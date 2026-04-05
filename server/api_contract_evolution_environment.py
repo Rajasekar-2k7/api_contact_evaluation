@@ -56,6 +56,13 @@ class ApiContractEvolutionEnvironment(Environment):
         Start a new episode with the given scenario.
         Returns initial observation (the API specs for the agent to analyze).
         """
+        # Support scenario_id passed via JSON body (unpacked into kwargs)
+        if "scenario_id" in kwargs:
+            try:
+                scenario_id = int(kwargs["scenario_id"])
+            except (ValueError, TypeError):
+                pass
+
         # Validate scenario_id
         if scenario_id not in SCENARIOS:
             scenario_id = 1

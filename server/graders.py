@@ -132,19 +132,17 @@ def grade_phase_2_classify(action_data: Dict, ground_truth: Dict) -> Dict:
         "true_affected": list(gt_affected),
         "is_correct": is_correct
     }
-
-
 def grade_phase_3_migrate(action_data: Dict, ground_truth: Dict) -> Dict:
     """
     Phase 3: Did the agent propose a good migration plan?
     
     Scores:
-      - Migration keyword coverage: 30%
-      - Has rollback plan: 15%
-      - Has risk identification: 15%
+      - Migration keyword coverage (incl. professional ops): 30%
+      - Has rollback plan: 10%
+      - Has risk identification: 10%
       - Backwards compatible alternative quality: 20%
-      - Deprecation timeline awareness: 10%
-      - Semantic versioning reasoning: 10%
+      - Traffic shifting/Sequencing (DEEP ENFORCEMENT): 20%
+      - Timeline & Semver awareness: 10%
     
     Max score: 1.0
     """
@@ -156,16 +154,23 @@ def grade_phase_3_migrate(action_data: Dict, ground_truth: Dict) -> Dict:
 
     # 1. Keyword coverage in migration steps (30%)
     all_migration_text = " ".join(migration_steps + risks + [rollback] + [alternative]).lower()
+    
+    # Add professional 'ops' keywords to standard requirement
+    pro_ops_keywords = ["monitoring", "alert", "dashboard", "metric", "canary", "gradual", "shadow traffic", "feature flag"]
+    ops_matches = sum(1 for kw in pro_ops_keywords if kw in all_migration_text)
+    ops_bonus = min(0.1, ops_matches * 0.02)
+
     if required_keywords:
         matched = sum(1 for kw in required_keywords if kw.lower() in all_migration_text)
-        keyword_score = matched / len(required_keywords)
+        keyword_score = (matched / len(required_keywords)) + ops_bonus
     else:
-        keyword_score = 0.7
+        keyword_score = 0.7 + ops_bonus
+    keyword_score = min(1.0, keyword_score)
 
-    # 2. Rollback plan quality (20%)
+    # 2. Rollback plan quality (10%)
     rollback_score = 1.0 if len(rollback.strip()) > 20 else 0.0
 
-    # 3. Risk identification quality (20%)
+    # 3. Risk identification quality (10%)
     risk_score = 1.0 if len(risks) > 0 else 0.0
 
     # 4. Backwards compatible alternative quality (20%)
@@ -179,53 +184,67 @@ def grade_phase_3_migrate(action_data: Dict, ground_truth: Dict) -> Dict:
         good_count = sum(1 for w in good_words if w in alt_lower)
         has_bad = any(w in alt_lower for w in bad_words)
         
-        # Deep Sequence Check: Require clients to be updated *before* sunsetting legacy
-        has_sequence_awareness = any(seq in all_migration_text for seq in [
-            "before deprecating", "first update", "migrate clients completely", "until all traffic"
-        ])
-        
         if has_bad:
             alt_score = 0.1
         elif good_count >= 2:
-            alt_score = 1.0 if has_sequence_awareness else 0.8
+            alt_score = 1.0
         elif good_count == 1:
             alt_score = 0.6
         else:
             alt_score = 0.3
 
-    # 5. Timeline Awareness (10%)
+    # 5. DEEP ENFORCEMENT: Traffic Shifting & Sequencing (20%)
+    # Checks if agent understands that clients MUST be updated before sunsetting
+    is_breaking = ground_truth.get("is_breaking", False)
+    sequence_score = 0.0
+    
+    has_sequence_awareness = any(seq in all_migration_text for seq in [
+        "before deprecating", "first update", "migrate clients completely", "until all traffic", "gradual rollout"
+    ])
+    has_traffic_shift = any(ts in all_migration_text for ts in [
+        "canary", "traffic shifting", "weighted routing", "shadow", "blue-green"
+    ])
+
+    if is_breaking:
+        if has_sequence_awareness and has_traffic_shift:
+            sequence_score = 1.0
+        elif has_sequence_awareness or has_traffic_shift:
+            sequence_score = 0.6
+    else:
+        sequence_score = 1.0 # Non-breaking changes are easier
+
+    # 6. Timeline & Semver Awareness (10%)
     timeline_score = 0.0
     timeline = action_data.get("migration_timeline_days", 30)
     deprecation_window = ground_truth.get("deprecation_window_days", 0)
+    
+    # Timeline logic
     if deprecation_window > 0:
-        if timeline <= deprecation_window:
-            timeline_score = 1.0
+        if timeline <= deprecation_window and timeline >= 30:
+            timeline_math_score = 1.0
         else:
-            timeline_score = 0.0
+            timeline_math_score = 0.5
     else:
-        timeline_score = 1.0 # Not applicable
+        timeline_math_score = 1.0
 
-    # 6. Semver Awareness (10%)
+    # Semver logic
     semver_score = 0.0
-    is_breaking = ground_truth.get("is_breaking", False)
     if is_breaking:
         if any(w in all_migration_text for w in ["major version", "v1 to v2", "bump major", "semver major", "new major version"]):
             semver_score = 1.0
-        elif any(w in all_migration_text for w in ["version bump", "semver", "semantic version"]):
-            semver_score = 0.5
     else:
         if any(w in all_migration_text for w in ["minor version", "patch", "v1.1", "backwards compatible"]):
             semver_score = 1.0
-        elif any(w in all_migration_text for w in ["no version change", "compatible"]):
-            semver_score = 0.5
+            
+    combined_meta_score = (timeline_math_score * 0.5) + (semver_score * 0.5)
 
     total = (
         keyword_score * 0.30 +
-        rollback_score * 0.15 +
-        risk_score * 0.15 +
+        rollback_score * 0.10 +
+        risk_score * 0.10 +
         alt_score * 0.20 +
-        timeline_score * 0.10 +
-        semver_score * 0.10
+        sequence_score * 0.20 +
+        combined_meta_score * 0.10
     )
 
     return {
@@ -234,6 +253,8 @@ def grade_phase_3_migrate(action_data: Dict, ground_truth: Dict) -> Dict:
         "has_rollback": rollback_score == 1.0,
         "has_risks": risk_score == 1.0,
         "alternative_score": round(alt_score, 4),
+        "sequence_awareness": round(sequence_score, 4),
+        "meta_awareness": round(combined_meta_score, 4),
         "keywords_matched": [kw for kw in required_keywords if kw.lower() in all_migration_text],
         "keywords_missing": [kw for kw in required_keywords if kw.lower() not in all_migration_text]
     }
