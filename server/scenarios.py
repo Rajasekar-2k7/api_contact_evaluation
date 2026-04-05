@@ -1,6 +1,7 @@
-# server/scenarios.py — All 5 scenarios for the environment
+# server/scenarios.py — All 6 scenarios for the environment
 # DOMAIN 1: Payment Service API (scenarios 1, 2, 3)
-# DOMAIN 2: Auth & Gateway API (scenarios 4, 5)
+# DOMAIN 2: Auth Service (scenario 4) & API Gateway (scenario 5)
+# DOMAIN 3: E-Commerce (GraphQL) (scenario 6)
 
 SCENARIOS = {
 

@@ -34,9 +34,11 @@ class ApiContractEvolutionEnvironment(Environment):
       Phase 2: Classify whether the change is breaking and who is affected
       Phase 3: Propose a safe migration plan
 
-    Supports 5 scenarios across 2 real-world domains:
+    Supports 6 scenarios across 4 real-world domains:
       - Payment Service (scenarios 1-3)
-      - Auth & Gateway (scenarios 4-5)
+      - Auth Service (scenario 4)
+      - API Gateway (scenario 5)
+      - E-Commerce (GraphQL) (scenario 6)
     """
 
     # Enable concurrent WebSocket sessions.
