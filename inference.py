@@ -98,8 +98,9 @@ def build_phase1_prompt(observation: Dict) -> str:
     """Prompt for Phase 1: Identify what changed."""
     spec_v1 = json.dumps(observation.get("spec_v1", {}), indent=2)
     spec_v2 = json.dumps(observation.get("spec_v2", {}), indent=2)
-    
-    return f"""You are an expert API analyst. Compare these two API versions carefully.
+
+    return f"""You are an expert API compatibility analyst. Your job is to find EVERY difference
+between two API versions, including semantic changes that are invisible to schema diffing tools.
 
 API v1:
 {spec_v1}
@@ -107,18 +108,26 @@ API v1:
 API v2:
 {spec_v2}
 
-Think step by step:
-1. Go through every field, endpoint, type, and value in v1
-2. Find what is different, removed, added, or semantically changed in v2
-3. Pay special attention to: error codes, field types, units, rate limiting strategies, auth formats
-4. Identify the CATEGORY of change precisely
+Analysis approach:
+1. Compare every field, type, endpoint, error code, example value, and behavioral note
+2. Look for SEMANTIC changes: unit changes (cents vs dollars), strategy changes
+   (per_ip vs per_user), format changes (opaque token vs JWT)
+3. Example values often reveal unit changes that the schema hides — compare them carefully
+4. Identify the SINGLE most important change_category
 
-Respond with ONLY this JSON:
+Categories:
+  field_added       — a new optional field was introduced
+  field_removed     — an existing field was removed
+  type_changed      — a field's type or format changed (number, string, JWT, etc.)
+  error_code_changed — an error code string was renamed or changed value
+  behavior_changed  — same API surface, different runtime behavior or semantics
+
+Respond with ONLY valid JSON:
 {{
   "action_type": "identify",
-  "changed_fields": ["exact field names that changed, use dot notation like rate_limiting.strategy"],
-  "change_category": "one of: field_added | field_removed | type_changed | error_code_changed | behavior_changed",
-  "reason": "explain exactly what changed and why it matters technically"
+  "changed_fields": ["dot.notation.field.names"],
+  "change_category": "one of the 5 categories above",
+  "reason": "precise technical explanation of what changed and why it matters"
 }}"""
 
 
@@ -129,12 +138,12 @@ def build_phase2_prompt(observation: Dict) -> str:
     client_code = observation.get("client_code", {})
     client_personas = json.dumps(observation.get("client_personas", {}), indent=2)
     prev = observation.get("previous_phase_feedback", "")
-    
+
     # Format client code with explicit labels
     client_analysis = ""
     for name, code in client_code.items():
-        client_analysis += f"\n[{name}]:\n{code}\n"
-    
+        client_analysis += f"\n=== Client: {name} ===\n{code}\n"
+
     return f"""You are an expert API compatibility analyst.
 
 API v1:
@@ -143,27 +152,32 @@ API v1:
 API v2:
 {spec_v2}
 
-Client code that currently uses v1:
+Client code (currently running against v1):
 {client_analysis}
 
 Client update constraints:
 {client_personas}
 
-Previous analysis: {prev}
+Previous change analysis: {prev}
 
-For EACH client, trace through their code line by line and determine:
-- Does their code depend on the specific value/behavior that changed?
-- Will they break silently or loudly?
-- Can they auto-recover or must they manually update?
+For EACH client, read their code line by line and answer:
+1. Does this client's code reference the SPECIFIC value/behavior that changed?
+2. If yes — will it break loudly (exception) or silently (wrong output)?
+3. Which exact line of code causes the break?
 
-Respond with ONLY this JSON:
+IMPORTANT: Your confidence value MUST reflect your actual certainty.
+- If you are very sure of your analysis, set confidence=0.8–1.0
+- If there is ambiguity, set confidence=0.4–0.6
+- Do NOT default to 0.5 — use your real assessment
+
+Respond with ONLY valid JSON:
 {{
   "action_type": "classify",
   "is_breaking": true or false,
-  "affected_clients": ["names of clients whose code WILL break"],
+  "affected_clients": ["exact client names from above that WILL break"],
   "severity": 0.0 to 1.0,
   "confidence": 0.0 to 1.0,
-  "reason": "for each affected client: quote the exact line of code that breaks and why"
+  "reason": "for each affected client: quote the exact line that breaks and explain why"
 }}"""
 
 
@@ -172,8 +186,10 @@ def build_phase3_prompt(observation: Dict) -> str:
     spec_v1 = json.dumps(observation.get("spec_v1", {}), indent=2)
     spec_v2 = json.dumps(observation.get("spec_v2", {}), indent=2)
     prev = observation.get("previous_phase_feedback", "")
-    
-    return f"""You are an expert API migration planner.
+    deprecation_window = observation.get("deprecation_window_days", 0)
+    deadline_note = f"\nIMPORTANT: The deprecation window for this scenario is {deprecation_window} days. Your migration_timeline_days MUST be between 30 and {deprecation_window}." if deprecation_window > 0 else ""
+
+    return f"""You are an expert API migration planner at a major tech company.
 
 API v1:
 {spec_v1}
@@ -181,25 +197,51 @@ API v1:
 API v2:
 {spec_v2}
 
-Impact analysis from previous phase:
-{prev}
+Impact analysis from the previous phase:
+{prev}{deadline_note}
 
-A good migration plan:
-- Runs v1 and v2 IN PARALLEL during transition (never hard cutover)
-- Notifies affected clients 90 days before deprecation (partner notice)
-- Uses semantic versioning: major bump for breaking changes
-- Includes canary deployment and feature flags
-- Has a concrete rollback plan if metrics degrade
-- Mentions monitoring and observability during rollout
+Here is an example of an EXCELLENT migration plan response. Use this as a model:
 
-Respond with ONLY this JSON:
+```json
 {{
   "action_type": "migrate",
-  "migration_steps": ["ordered steps, be specific - mention parallel support, canary, versioned rollout"],
+  "migration_steps": [
+    "Deploy v2 endpoint in parallel with v1 — both versions run simultaneously with no traffic cutover",
+    "Enable feature flag for 1% canary traffic to v2, monitor error rates and latency on dashboard",
+    "Send 90-day deprecation notice to all affected partners before sunsetting v1",
+    "Gradually shift traffic: 1% → 10% → 50% → 100% using weighted routing over 30 days",
+    "Migrate clients completely to v2 before removing v1 endpoint",
+    "Run DB migration scripts in shadow mode, validate against production data",
+    "Flip feature flag off and revert to v1 routing if error rate exceeds 0.1%"
+  ],
+  "migration_timeline_days": 60,
+  "migration_risks": [
+    "Mobile app has 90-day update cycle — clients cannot update immediately",
+    "Database schema migration required before v2 go-live",
+    "Partner SLA requires 90 days advance notice"
+  ],
+  "rollback_plan": "Immediately revert API Gateway routing back to v1 handler. Disable v2 feature flag. Roll back DB migration scripts. Notify affected clients of emergency revert.",
+  "backwards_compatible_alternative": "Run v1 and v2 endpoints in parallel permanently. Use versioned URL paths (/v1/, /v2/) so clients can migrate at their own pace. Add deprecation headers to v1 responses with sunset date."
+}}
+```
+
+Now create your migration plan for the API change above. Requirements:
+- Use parallel deployment (never hard cutover — that is an antipattern)
+- Use gradual/canary rollout with feature flags
+- Update clients first BEFORE deprecating v1
+- Use major versioning (v2) for breaking changes
+- Include monitoring and alerting during rollout
+- Give a realistic rollback plan with specific steps
+- Reference both v1 and v2 coexisting in your alternative approach
+
+Respond with ONLY valid JSON (no markdown, no explanation outside JSON):
+{{
+  "action_type": "migrate",
+  "migration_steps": ["ordered, specific steps"],
   "migration_timeline_days": number,
-  "migration_risks": ["specific risks like db migration, partner SLA, mobile update cycle"],
-  "rollback_plan": "specific steps to revert if something breaks in production",
-  "backwards_compatible_alternative": "concrete way to support both v1 and v2 simultaneously using versioning, aliases, or feature flags"
+  "migration_risks": ["specific production risks"],
+  "rollback_plan": "specific revert steps",
+  "backwards_compatible_alternative": "concrete dual-version support strategy"
 }}"""
 
 

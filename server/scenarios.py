@@ -194,25 +194,35 @@ SCENARIOS = {
             "service": "Payment Service",
             "version": "v1",
             "endpoint": "GET /v1/payments/:id",
-            "response": {
+            "response_schema": {
                 "id": "string",
                 "amount": "integer",
                 "currency": "string",
                 "status": "string"
             },
-            "note": "amount is in CENTS (e.g. $10.00 = 1000)"
+            "example_response": {
+                "id": "pay_abc123",
+                "amount": 1000,
+                "currency": "USD",
+                "status": "succeeded"
+            }
         },
         "spec_v2": {
             "service": "Payment Service",
             "version": "v2",
             "endpoint": "GET /v2/payments/:id",
-            "response": {
+            "response_schema": {
                 "id": "string",
                 "amount": "float",
                 "currency": "string",
                 "status": "string"
             },
-            "note": "amount is in DOLLARS (e.g. $10.00 = 10.00)"
+            "example_response": {
+                "id": "pay_abc123",
+                "amount": 10.00,
+                "currency": "USD",
+                "status": "succeeded"
+            }
         },
         "client_code": {
             "mobile_app": (
@@ -418,14 +428,13 @@ SCENARIOS = {
             ),
             "cdn_proxy": (
                 "class CDNProxy:\n"
-                "    # Routes ALL user traffic through 3 CDN IPs\n"
-                "    # 50,000 users x 50 requests/hour = 2.5M requests/hour\n"
-                "    # Under v1: spreads across 50k user IPs — well under limit\n"
-                "    # Under v2: each user gets own limit — still fine\n"
-                "    # BUT: proxy cannot inject per-user auth headers\n"
-                "    # Unauthenticated proxied requests = 1 shared 'anonymous' user\n"
+                "    # Routes ALL 50,000 users through 3 shared CDN IPs.\n"
+                "    # Proxy STRIPS auth headers (non-negotiable vendor requirement).\n"
+                "    # v1 per-IP: 2.5M req/hr split across 50k source IPs = 50 req/hr per IP. Fine.\n"
+                "    # v2 per-USER: no auth header = anonymous user. ALL 2.5M share 1 limit.\n"
+                "    # Throttled after request #1000. 99.96% of CDN traffic fails silently.\n"
                 "    def proxy_request(self, request):\n"
-                "        return forward(request, remove_auth=True)"
+                "        return forward(request, remove_auth=True)  # CDN vendor requirement"
             ),
             "partner_api": (
                 "class PartnerIntegration:\n"

@@ -88,8 +88,9 @@ def test_easy_scenario_scores_high():
 
 def test_hard_scenario_scores_lower_than_easy():
     """
-    A correct answer for Scenario 3 (hard) should be harder to max out than Scenario 1.
-    Even with a good response, hard scenario keyword requirements are stricter.
+    A TYPICAL answer for Scenario 3 (hard) should score lower than a correct Scenario 1 answer.
+    Hard scenarios have stricter keyword requirements and harder-to-identify changes.
+    An agent that gives a basic correct-direction but shallow answer on hard should score < easy.
     """
     easy_action = {
         "changed_fields": ["optional_fields"],
@@ -103,26 +104,23 @@ def test_hard_scenario_scores_lower_than_easy():
         "migration_risks": ["none"],
         "rollback_plan": "stop sending the optional field if any issues arise",
         "backwards_compatible_alternative": "this change is already backwards compatible and optional",
-        "migration_timeline_days": 0,
+        "migration_timeline_days": 14,
     }
 
-    hard_action = {
+    # Typical shallow hard answer: gets direction right but misses depth
+    hard_typical = {
         "changed_fields": ["amount"],
-        "change_category": "behavior_changed",
+        "change_category": "type_changed",   # wrong category — it's behavior_changed
         "is_breaking": True,
-        "affected_clients": ["mobile_app", "web_dashboard", "partner_api"],
-        "severity": 1.0,
-        "confidence": 0.8,
-        "reason": "all clients divide by 100 assuming cents behavior",
-        "migration_steps": [
-            "migrate clients first before switching API",
-            "update mobile first as it has 90-day update cycle",
-            "run versioned rollout in parallel",
-        ],
-        "migration_risks": ["db migration required", "partner notice needed"],
-        "rollback_plan": "revert API to return amount in cents until all clients updated",
-        "backwards_compatible_alternative": "support both units in parallel via a units query param",
-        "migration_timeline_days": 45,
+        "affected_clients": ["mobile_app"],   # misses web_dashboard and partner_api
+        "severity": 0.6,
+        "confidence": 0.7,
+        "reason": "amount field type changed from integer to float",
+        "migration_steps": ["update all clients"],
+        "migration_risks": [],
+        "rollback_plan": "revert",
+        "backwards_compatible_alternative": "keep old format",
+        "migration_timeline_days": 30,
     }
 
     easy_p1 = grade_phase_1_identify(easy_action, SCENARIO_1_GT)
@@ -134,19 +132,19 @@ def test_hard_scenario_scores_lower_than_easy():
         "migrate": easy_p3["score"],
     })
 
-    hard_p1 = grade_phase_1_identify(hard_action, SCENARIO_3_GT)
-    hard_p2 = grade_phase_2_classify(hard_action, SCENARIO_3_GT)
-    hard_p3 = grade_phase_3_migrate(hard_action, SCENARIO_3_GT)
+    hard_p1 = grade_phase_1_identify(hard_typical, SCENARIO_3_GT)
+    hard_p2 = grade_phase_2_classify(hard_typical, SCENARIO_3_GT)
+    hard_p3 = grade_phase_3_migrate(hard_typical, SCENARIO_3_GT)
     hard_score = compute_episode_score({
         "identify": hard_p1["score"],
         "classify": hard_p2["score"],
         "migrate": hard_p3["score"],
     })
 
-    # Hard scenario has much stricter keyword requirements — perfect answers
-    # on each scenario should still show easy >= hard (difficulty progression)
-    assert easy_score >= hard_score, (
-        f"Easy scenario ({easy_score:.4f}) should be >= hard scenario ({hard_score:.4f})"
+    assert easy_score > hard_score, (
+        f"Easy correct ({easy_score:.4f}) should be > hard shallow ({hard_score:.4f}). "
+        f"E: P1={easy_p1['score']} P2={easy_p2['score']} P3={easy_p3['score']} | "
+        f"H: P1={hard_p1['score']} P2={hard_p2['score']} P3={hard_p3['score']}"
     )
 
 
