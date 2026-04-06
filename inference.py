@@ -333,7 +333,7 @@ def main():
         try:
             result = run_scenario(scenario_id)
             all_results.append(result)
-            time.sleep(0.5)  # Optimized pause between scenarios
+            time.sleep(0.2)  # Optimized pause between scenarios
         except Exception as e:
             log(f"ERROR in scenario {scenario_id}: {e}")
             all_results.append({

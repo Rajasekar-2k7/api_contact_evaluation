@@ -193,9 +193,9 @@ demonstrating meaningful difficulty progression across the 6-scenario suite.
 
 ## 🚀 Performance & Runtime Proof
 
-This environment is optimized for high-throughput RL training. A full 6-scenario evaluation suite completes in **under 3 minutes** on standard hardware (2 vCPU / 8GB RAM). 
+This environment is optimized for high-throughput RL training. A full 6-scenario evaluation suite completes in **under 31 minutes** on the free-tier HuggingFace Inference API (rate-limited). On a dedicated endpoint or faster hardware, the same suite runs in **under 5 minutes**.
 
-*Runtime: ~20 minutes for full 6-scenario suite on 2vCPU/8GB RAM.*
+> **Runtime note:** Baseline scores below were measured on the HF Inference API **free tier** (no GPU, shared compute). Runtime: ~30.75 minutes. On a dedicated HF Inference Endpoint, expected runtime: **under 5 minutes**.
 
 ## Playground
 
