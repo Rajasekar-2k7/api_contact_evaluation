@@ -36,6 +36,9 @@ dev = [
 
 [project.scripts]
 api-contract-evolution = "server.app:main"
+api_contract_evolution = "server.app:main"
+server = "server.app:main"
+
 
 [tool.setuptools]
 include-package-data = true
