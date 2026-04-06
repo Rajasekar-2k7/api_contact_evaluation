@@ -1,0 +1,154 @@
+diff --git a/inference.py b/inference.py
+index f2ac456..f59b33f 100644
+--- a/inference.py
++++ b/inference.py
+@@ -15,7 +15,7 @@ ENVIRONMENT VARIABLES REQUIRED:
+ 
+ HOW TO RUN (Windows Command Prompt):
+   set API_BASE_URL=https://api-inference.huggingface.co/v1
+-  set MODEL_NAME=meta-llama/Meta-Llama-3.1-8B-Instruct
++#   set MODEL_NAME=meta-llama/Llama-3.3-70B-Instruct
+   set HF_TOKEN=hf_your_huggingface_token_here
+   python inference.py
+ """
+@@ -29,7 +29,7 @@ from typing import Dict, Any, List
+ 
+ # ─── CONFIGURATION ────────────────────────────────────────────────────────
+ API_BASE_URL = os.getenv("API_BASE_URL", "https://api-inference.huggingface.co/v1")
+-MODEL_NAME = os.getenv("MODEL_NAME", "meta-llama/Meta-Llama-3.1-8B-Instruct")
++MODEL_NAME = os.getenv("MODEL_NAME", "meta-llama/Llama-3.3-70B-Instruct")
+ HF_TOKEN = os.getenv("HF_TOKEN", "")
+ ENV_URL = os.getenv("ENV_URL", "http://localhost:7860")
+ 
+@@ -100,7 +100,7 @@ def build_phase1_prompt(observation: Dict) -> str:
+     spec_v1 = json.dumps(observation.get("spec_v1", {}), indent=2)
+     spec_v2 = json.dumps(observation.get("spec_v2", {}), indent=2)
+     
+-    return f"""Analyze these two API versions and identify what changed.
++    return f"""You are an expert API analyst. Compare these two API versions carefully.
+ 
+ API v1:
+ {spec_v1}
+@@ -108,12 +108,18 @@ API v1:
+ API v2:
+ {spec_v2}
+ 
+-Respond with ONLY this JSON (no other text):
++Think step by step:
++1. Go through every field, endpoint, type, and value in v1
++2. Find what is different, removed, added, or semantically changed in v2
++3. Pay special attention to: error codes, field types, units, rate limiting strategies, auth formats
++4. Identify the CATEGORY of change precisely
++
++Respond with ONLY this JSON:
+ {{
+   "action_type": "identify",
+-  "changed_fields": ["list", "of", "field", "names", "that", "changed"],
++  "changed_fields": ["exact field names that changed, use dot notation like rate_limiting.strategy"],
+   "change_category": "one of: field_added | field_removed | type_changed | error_code_changed | behavior_changed",
+-  "reason": "brief explanation of what changed and why"
++  "reason": "explain exactly what changed and why it matters technically"
+ }}"""
+ 
+ 
+@@ -121,11 +127,16 @@ def build_phase2_prompt(observation: Dict) -> str:
+     """Prompt for Phase 2: Classify the impact."""
+     spec_v1 = json.dumps(observation.get("spec_v1", {}), indent=2)
+     spec_v2 = json.dumps(observation.get("spec_v2", {}), indent=2)
+-    client_code = json.dumps(observation.get("client_code", {}), indent=2)
++    client_code = observation.get("client_code", {})
+     client_personas = json.dumps(observation.get("client_personas", {}), indent=2)
+-    prev_feedback = observation.get("previous_phase_feedback", "")
++    prev = observation.get("previous_phase_feedback", "")
+     
+-    return f"""Analyze this API change and determine which clients will break.
++    # Format client code with explicit labels
++    client_analysis = ""
++    for name, code in client_code.items():
++        client_analysis += f"\n[{name}]:\n{code}\n"
++    
++    return f"""You are an expert API compatibility analyst.
+ 
+ API v1:
+ {spec_v1}
+@@ -133,25 +144,27 @@ API v1:
+ API v2:
+ {spec_v2}
+ 
+-Client Code:
+-{client_code}
++Client code that currently uses v1:
++{client_analysis}
+ 
+-Client Update Cycles:
++Client update constraints:
+ {client_personas}
+ 
+-Previous Analysis:
+-{prev_feedback}
++Previous analysis: {prev}
+ 
+-For each client, check if its code will stop working after the v2 change.
++For EACH client, trace through their code line by line and determine:
++- Does their code depend on the specific value/behavior that changed?
++- Will they break silently or loudly?
++- Can they auto-recover or must they manually update?
+ 
+ Respond with ONLY this JSON:
+ {{
+   "action_type": "classify",
+   "is_breaking": true or false,
+-  "affected_clients": ["list of client names that will break"],
++  "affected_clients": ["names of clients whose code WILL break"],
+   "severity": 0.0 to 1.0,
+   "confidence": 0.0 to 1.0,
+-  "reason": "detailed explanation of which clients break and why"
++  "reason": "for each affected client: quote the exact line of code that breaks and why"
+ }}"""
+ 
+ 
+@@ -159,9 +172,9 @@ def build_phase3_prompt(observation: Dict) -> str:
+     """Prompt for Phase 3: Propose migration plan."""
+     spec_v1 = json.dumps(observation.get("spec_v1", {}), indent=2)
+     spec_v2 = json.dumps(observation.get("spec_v2", {}), indent=2)
+-    prev_feedback = observation.get("previous_phase_feedback", "")
++    prev = observation.get("previous_phase_feedback", "")
+     
+-    return f"""Propose a safe migration plan for this API change.
++    return f"""You are an expert API migration planner.
+ 
+ API v1:
+ {spec_v1}
+@@ -169,17 +182,25 @@ API v1:
+ API v2:
+ {spec_v2}
+ 
+-Impact Analysis:
+-{prev_feedback}
++Impact analysis from previous phase:
++{prev}
++
++A good migration plan:
++- Runs v1 and v2 IN PARALLEL during transition (never hard cutover)
++- Notifies affected clients 90 days before deprecation (partner notice)
++- Uses semantic versioning: major bump for breaking changes
++- Includes canary deployment and feature flags
++- Has a concrete rollback plan if metrics degrade
++- Mentions monitoring and observability during rollout
+ 
+ Respond with ONLY this JSON:
+ {{
+   "action_type": "migrate",
+-  "migration_steps": ["step 1", "step 2", "step 3"],
+-  "migration_timeline_days": 30,
+-  "migration_risks": ["risk 1", "risk 2"],
+-  "rollback_plan": "how to undo this change if something breaks",
+-  "backwards_compatible_alternative": "a way to make this change without breaking clients"
++  "migration_steps": ["ordered steps, be specific - mention parallel support, canary, versioned rollout"],
++  "migration_timeline_days": number,
++  "migration_risks": ["specific risks like db migration, partner SLA, mobile update cycle"],
++  "rollback_plan": "specific steps to revert if something breaks in production",
++  "backwards_compatible_alternative": "concrete way to support both v1 and v2 simultaneously using versioning, aliases, or feature flags"
+ }}"""
+ 
+ 

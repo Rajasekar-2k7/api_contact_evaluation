@@ -2,72 +2,19 @@
   "model": "meta-llama/Meta-Llama-3.1-8B-Instruct",
   "average_score": 0.6052,
   "runtime_seconds": 1845.2,
+  "runtime_note": "Measured on HF Inference API free tier. Dedicated endpoint expected under 5 minutes.",
   "results": [
-    {
-      "scenario_id": 1,
-      "scenario_name": "API Spec Extensibility (Add Optional Field)",
-      "difficulty": "Easy",
-      "phase_scores": {
-        "identify": 1.0,
-        "classify": 0.856,
-        "migrate": 0.770
-      },
-      "final_score": 0.8753
-    },
-    {
-      "scenario_id": 2,
-      "scenario_name": "Error Code Standardization",
-      "difficulty": "Medium",
-      "phase_scores": {
-        "identify": 1.0,
-        "classify": 0.540,
-        "migrate": 0.414
-      },
-      "final_score": 0.6514
-    },
-    {
-      "scenario_id": 3,
-      "scenario_name": "Currency Precision Bug Fix",
-      "difficulty": "Hard",
-      "phase_scores": {
-        "identify": 0.5,
-        "classify": 0.450,
-        "migrate": 0.335
-      },
-      "final_score": 0.4286
-    },
-    {
-      "scenario_id": 4,
-      "scenario_name": "Auth Token Format Migration",
-      "difficulty": "Medium",
-      "phase_scores": {
-        "identify": 1.0,
-        "classify": 0.612,
-        "migrate": 0.493
-      },
-      "final_score": 0.7020
-    },
-    {
-      "scenario_id": 5,
-      "scenario_name": "Implicit Rate Limit Constraints",
-      "difficulty": "Hard",
-      "phase_scores": {
-        "identify": 0.2,
-        "classify": 0.610,
-        "migrate": 0.342
-      },
-      "final_score": 0.3842
-    },
-    {
-      "scenario_id": 6,
-      "scenario_name": "GraphQL Nullability Change",
-      "difficulty": "Medium",
-      "phase_scores": {
-        "identify": 1.0,
-        "classify": 0.440,
-        "migrate": 0.330
-      },
-      "final_score": 0.5899
-    }
+    {"scenario_id": 1, "scenario_name": "Add Optional Field", "difficulty": "easy",
+     "phase_scores": {"identify": 1.0, "classify": 0.856, "migrate": 0.770}, "final_score": 0.8753},
+    {"scenario_id": 2, "scenario_name": "Error Code Breaking Change", "difficulty": "medium",
+     "phase_scores": {"identify": 1.0, "classify": 0.540, "migrate": 0.414}, "final_score": 0.6514},
+    {"scenario_id": 3, "scenario_name": "The Fix That Breaks (Paradox)", "difficulty": "hard",
+     "phase_scores": {"identify": 0.5, "classify": 0.450, "migrate": 0.335}, "final_score": 0.4286},
+    {"scenario_id": 4, "scenario_name": "Auth Token Format Change", "difficulty": "medium",
+     "phase_scores": {"identify": 1.0, "classify": 0.612, "migrate": 0.493}, "final_score": 0.7020},
+    {"scenario_id": 5, "scenario_name": "Silent Rate Limit Semantic Change", "difficulty": "hard",
+     "phase_scores": {"identify": 0.2, "classify": 0.610, "migrate": 0.342}, "final_score": 0.3842},
+    {"scenario_id": 6, "scenario_name": "GraphQL Nullability Change", "difficulty": "medium",
+     "phase_scores": {"identify": 1.0, "classify": 0.440, "migrate": 0.330}, "final_score": 0.5899}
   ]
 }

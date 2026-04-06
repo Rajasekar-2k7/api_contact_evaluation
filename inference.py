@@ -49,11 +49,11 @@ def log(msg: str):
 
 # ─── ENVIRONMENT INTERACTION ───────────────────────────────────────────────
 
-def get_obs(response_json: Dict) -> Dict:
-    """Extract observation from response, handling both flat and wrapped formats."""
-    if "observation" in response_json:
-        return response_json["observation"]
-    return response_json
+def get_obs(response: Dict) -> Dict:
+    """Handle both flat and OpenEnv-wrapped observation formats."""
+    if "observation" in response:
+        return response["observation"]
+    return response
 
 
 def reset_env(scenario_id: int) -> Dict:
@@ -69,10 +69,9 @@ def reset_env(scenario_id: int) -> Dict:
 
 
 def step_env(action: Dict) -> Dict:
-    """Call /step on the environment and return the extracted observation."""
     r = requests.post(f"{ENV_URL}/step", json=action, timeout=30)
     r.raise_for_status()
-    return get_obs(r.json())
+    return r.json()
 
 
 def get_state() -> Dict:
@@ -264,6 +263,7 @@ def run_scenario(scenario_id: int) -> Dict:
     log(f"Phase 1 action: {json.dumps(action1, indent=2)}")
     
     result1 = step_env(action1)
+    result1 = get_obs(result1)
     obs1 = result1
     phase1_score = obs1.get("previous_phase_score", 0.0)
     log(f"Phase 1 score: {phase1_score:.4f}")
@@ -280,6 +280,7 @@ def run_scenario(scenario_id: int) -> Dict:
     log(f"Phase 2 action: {json.dumps(action2, indent=2)}")
     
     result2 = step_env(action2)
+    result2 = get_obs(result2)
     obs2 = result2
     phase2_score = obs2.get("previous_phase_score", 0.0)
     log(f"Phase 2 score: {phase2_score:.4f}")
@@ -296,6 +297,7 @@ def run_scenario(scenario_id: int) -> Dict:
     log(f"Phase 3 action: {json.dumps(action3, indent=2)}")
     
     result3 = step_env(action3)
+    result3 = get_obs(result3)
     obs3 = result3
     final_score = result3.get("reward", 0.0)
     phase3_score = obs3.get("previous_phase_score", 0.0)
