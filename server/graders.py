@@ -36,6 +36,14 @@ CATEGORY_SYNONYMS = {
 }
 
 
+def _clamp(val: float) -> float:
+    """Ensure a score is strictly within (0, 1) for the OpenEnv validator."""
+    try:
+        return max(0.001, min(0.999, float(val)))
+    except (TypeError, ValueError):
+        return 0.001
+
+
 def normalize_category(category: str) -> str:
     """Map any synonym to the canonical category name."""
     cat_lower = category.lower().strip()
@@ -111,17 +119,17 @@ def grade_phase_1_identify(action_data: Dict, ground_truth: Dict) -> Dict:
 
     total = min(1.0, core_score + keyword_bonus)
     # Ensure score is strictly within (0, 1) for OpenEnv validator
-    total = max(0.001, min(0.999, total))
+    total = _clamp(total)
 
     return {
         "score": round(total, 4),
-        "field_score": round(field_score, 4),
-        "category_score": round(category_score, 4),
+        "field_score": round(_clamp(field_score), 4),
+        "category_score": round(_clamp(category_score), 4),
         "agent_fields": list(agent_fields),
         "true_fields": list(gt_fields),
         "agent_category": agent_category_raw,
         "true_category": gt_category_raw,
-        "keyword_bonus": round(keyword_bonus, 4)
+        "keyword_bonus": round(_clamp(keyword_bonus), 4)
     }
 
 
@@ -194,14 +202,14 @@ def grade_phase_2_classify(action_data: Dict, ground_truth: Dict) -> Dict:
         confidence_score * 0.15
     )
     # Ensure score is strictly within (0, 1) for OpenEnv validator
-    total = max(0.001, min(0.999, total))
+    total = _clamp(total)
 
     return {
         "score": round(total, 4),
-        "breaking_score": round(breaking_score, 4),
-        "client_score": round(client_score, 4),
-        "severity_score": round(severity_score, 4),
-        "confidence_calibration": round(confidence_score, 4),
+        "breaking_score": round(_clamp(breaking_score), 4),
+        "client_score": round(_clamp(client_score), 4),
+        "severity_score": round(_clamp(severity_score), 4),
+        "confidence_calibration": round(_clamp(confidence_score), 4),
         "agent_said_breaking": agent_breaking,
         "truth_is_breaking": gt_breaking,
         "agent_affected": list(agent_affected),
@@ -410,16 +418,16 @@ def grade_phase_3_migrate(action_data: Dict, ground_truth: Dict) -> Dict:
         combined_meta_score * 0.10
     )
     # Ensure score is strictly within (0, 1) for OpenEnv validator
-    total = max(0.001, min(0.999, total))
+    total = _clamp(total)
 
     return {
         "score": round(total, 4),
-        "keyword_coverage": round(keyword_score, 4),
+        "keyword_coverage": round(_clamp(keyword_score), 4),
         "has_rollback": rollback_score > 0.5,
         "has_risks": risk_score > 0.0,
-        "alternative_score": round(alt_score, 4),
-        "sequence_awareness": round(sequence_score, 4),
-        "meta_awareness": round(combined_meta_score, 4),
+        "alternative_score": round(_clamp(alt_score), 4),
+        "sequence_awareness": round(_clamp(sequence_score), 4),
+        "meta_awareness": round(_clamp(combined_meta_score), 4),
         "keywords_matched": [kw for kw in required_keywords if kw.lower() in all_text],
         "keywords_missing": [kw for kw in required_keywords if kw.lower() not in all_text]
     }
@@ -439,5 +447,5 @@ def compute_episode_score(phase_scores: Dict[str, float]) -> float:
 
     total = (p1 * 0.30) + (p2 * 0.40) + (p3 * 0.30)
     # Ensure score is strictly within (0, 1) for OpenEnv validator
-    total = max(0.001, min(0.999, total))
+    total = _clamp(total)
     return round(total, 4)

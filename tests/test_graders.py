@@ -216,10 +216,10 @@ def test_confidence_calibration():
     )
 
 
-# ─── TEST 5: All phase scores must be in [0.0, 1.0] ──────────────────────────
+# ─── TEST 5: All phase scores must be in (0.0, 1.0) ──────────────────────────
 
 def test_scores_in_valid_range():
-    """Every grader must return a score in [0.0, 1.0] for any input."""
+    """Every grader must return a score strictly in (0.0, 1.0) for any input."""
     test_cases = [
         # (action, ground_truth)
         (
@@ -257,7 +257,7 @@ def test_scores_in_valid_range():
             try:
                 result = grader_fn(action, gt)
                 score = result["score"]
-                assert 0.0 <= score <= 1.0, (
+                assert 0.0 < score < 1.0, (
                     f"{grader_fn.__name__} returned out-of-range score {score:.4f}"
                 )
             except KeyError:

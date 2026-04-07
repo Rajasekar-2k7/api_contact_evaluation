@@ -84,7 +84,7 @@ class ApiContractEvolutionEnvironment(Environment):
 
         return ApiContractObservation(
             done=False,
-            reward=0.0,
+            reward=0.001,
             scenario_id=self._scenario_id,
             scenario_name=scenario["name"],
             difficulty=scenario["difficulty"],
@@ -97,8 +97,8 @@ class ApiContractEvolutionEnvironment(Environment):
             client_personas=scenario["client_personas"],
             dependency_graph=scenario["dependency_graph"],
             previous_phase_feedback="",
-            previous_phase_score=0.0,
-            cumulative_score=0.0,
+            previous_phase_score=0.001,
+            cumulative_score=0.001,
         )
 
     def step(self, action: ApiContractAction) -> ApiContractObservation:  # type: ignore[override]
@@ -110,7 +110,7 @@ class ApiContractEvolutionEnvironment(Environment):
             scenario = SCENARIOS[self._scenario_id]
             return ApiContractObservation(
                 done=True,
-                reward=0.0,
+                reward=0.001,
                 scenario_id=self._scenario_id,
                 scenario_name=scenario["name"],
                 difficulty=scenario["difficulty"],
@@ -123,7 +123,7 @@ class ApiContractEvolutionEnvironment(Environment):
                 client_personas=scenario["client_personas"],
                 dependency_graph=scenario["dependency_graph"],
                 previous_phase_feedback="Episode already finished.",
-                previous_phase_score=0.0,
+                previous_phase_score=0.001,
                 cumulative_score=compute_episode_score(self._phase_scores),
             )
 

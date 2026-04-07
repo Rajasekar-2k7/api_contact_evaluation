@@ -1,0 +1,324 @@
+
+======================================================================
+PHASE 1: Health & Info Endpoints
+======================================================================
+  [PASS] /health returns 200
+  [PASS] /health has 'status: ok'
+  [PASS] /health has environment name
+  [PASS] /health has version
+  [PASS] /health has scenarios_available
+  [PASS] /scenarios returns 200
+  [PASS] /scenarios has total=6
+  [PASS] /scenarios lists all 6
+  [PASS]   Scenario 1 has name+domain+difficulty
+  [PASS]   Scenario 2 has name+domain+difficulty
+  [PASS]   Scenario 3 has name+domain+difficulty
+  [PASS]   Scenario 4 has name+domain+difficulty
+  [PASS]   Scenario 5 has name+domain+difficulty
+  [PASS]   Scenario 6 has name+domain+difficulty
+  [PASS] /state returns 200
+  [PASS] /replay returns 200
+
+======================================================================
+PHASE 2: Full Episode Tests (All 6 Scenarios)
+======================================================================
+
+--- Scenario 1 ---
+  [PASS] S1 /reset returns 200
+  [PASS] S1 has scenario_id
+  [PASS] S1 has scenario_name
+  [PASS] S1 current_phase=identify
+  [PASS] S1 done=False after reset
+  [PASS] S1 has spec_v1
+  [PASS] S1 has spec_v2
+  [PASS] S1 has client_code
+  [PASS] S1 has 3 phases remaining
+  [PASS] S1 P1 /step returns 200
+  [PASS] S1 P1 score in [0,1]
+  [PASS] S1 P1 current_phase=classify
+  [PASS] S1 P1 done=False
+  [PASS] S1 P1 has feedback
+      Phase 1 score: 1.0000
+  [PASS] S1 P2 /step returns 200
+  [PASS] S1 P2 score in [0,1]
+  [PASS] S1 P2 current_phase=migrate
+  [PASS] S1 P2 done=False
+      Phase 2 score: 0.9850
+  [PASS] S1 P3 /step returns 200
+  [PASS] S1 P3 score in [0,1]
+  [PASS] S1 P3 done=True
+  [PASS] S1 final reward in [0,1]
+  [PASS] S1 P3 current_phase=done
+  [PASS] S1 cumulative_score in [0,1]
+      Phase 3 score: 0.7400
+      Final reward:  0.9160
+  [FAIL] S1 /state is_done=True — got None
+  [PASS] S1 /state step_count=3
+  [PASS] S1 /replay has 3 actions
+  [PASS] S1 /replay is_done=True
+  [PASS] S1 step-after-done returns 200
+  [PASS] S1 step-after-done done=True
+
+--- Scenario 2 ---
+  [PASS] S2 /reset returns 200
+  [PASS] S2 has scenario_id
+  [PASS] S2 has scenario_name
+  [PASS] S2 current_phase=identify
+  [PASS] S2 done=False after reset
+  [PASS] S2 has spec_v1
+  [PASS] S2 has spec_v2
+  [PASS] S2 has client_code
+  [PASS] S2 has 3 phases remaining
+  [PASS] S2 P1 /step returns 200
+  [PASS] S2 P1 score in [0,1]
+  [PASS] S2 P1 current_phase=classify
+  [PASS] S2 P1 done=False
+  [PASS] S2 P1 has feedback
+      Phase 1 score: 1.0000
+  [PASS] S2 P2 /step returns 200
+  [PASS] S2 P2 score in [0,1]
+  [PASS] S2 P2 current_phase=migrate
+  [PASS] S2 P2 done=False
+      Phase 2 score: 0.9775
+  [PASS] S2 P3 /step returns 200
+  [PASS] S2 P3 score in [0,1]
+  [PASS] S2 P3 done=True
+  [PASS] S2 final reward in [0,1]
+  [PASS] S2 P3 current_phase=done
+  [PASS] S2 cumulative_score in [0,1]
+      Phase 3 score: 0.9000
+      Final reward:  0.9610
+  [FAIL] S2 /state is_done=True — got None
+  [PASS] S2 /state step_count=3
+  [PASS] S2 /replay has 3 actions
+  [PASS] S2 /replay is_done=True
+  [PASS] S2 step-after-done returns 200
+  [PASS] S2 step-after-done done=True
+
+--- Scenario 3 ---
+  [PASS] S3 /reset returns 200
+  [PASS] S3 has scenario_id
+  [PASS] S3 has scenario_name
+  [PASS] S3 current_phase=identify
+  [PASS] S3 done=False after reset
+  [PASS] S3 has spec_v1
+  [PASS] S3 has spec_v2
+  [PASS] S3 has client_code
+  [PASS] S3 has 3 phases remaining
+  [PASS] S3 P1 /step returns 200
+  [PASS] S3 P1 score in [0,1]
+  [PASS] S3 P1 current_phase=classify
+  [PASS] S3 P1 done=False
+  [PASS] S3 P1 has feedback
+      Phase 1 score: 1.0000
+  [PASS] S3 P2 /step returns 200
+  [PASS] S3 P2 score in [0,1]
+  [PASS] S3 P2 current_phase=migrate
+  [PASS] S3 P2 done=False
+      Phase 2 score: 0.9925
+  [PASS] S3 P3 /step returns 200
+  [PASS] S3 P3 score in [0,1]
+  [PASS] S3 P3 done=True
+  [PASS] S3 final reward in [0,1]
+  [PASS] S3 P3 current_phase=done
+  [PASS] S3 cumulative_score in [0,1]
+      Phase 3 score: 1.0000
+      Final reward:  0.9970
+  [FAIL] S3 /state is_done=True — got None
+  [PASS] S3 /state step_count=3
+  [PASS] S3 /replay has 3 actions
+  [PASS] S3 /replay is_done=True
+  [PASS] S3 step-after-done returns 200
+  [PASS] S3 step-after-done done=True
+
+--- Scenario 4 ---
+  [PASS] S4 /reset returns 200
+  [PASS] S4 has scenario_id
+  [PASS] S4 has scenario_name
+  [PASS] S4 current_phase=identify
+  [PASS] S4 done=False after reset
+  [PASS] S4 has spec_v1
+  [PASS] S4 has spec_v2
+  [PASS] S4 has client_code
+  [PASS] S4 has 3 phases remaining
+  [PASS] S4 P1 /step returns 200
+  [PASS] S4 P1 score in [0,1]
+  [PASS] S4 P1 current_phase=classify
+  [PASS] S4 P1 done=False
+  [PASS] S4 P1 has feedback
+      Phase 1 score: 1.0000
+  [PASS] S4 P2 /step returns 200
+  [PASS] S4 P2 score in [0,1]
+  [PASS] S4 P2 current_phase=migrate
+  [PASS] S4 P2 done=False
+      Phase 2 score: 0.9775
+  [PASS] S4 P3 /step returns 200
+  [PASS] S4 P3 score in [0,1]
+  [PASS] S4 P3 done=True
+  [PASS] S4 final reward in [0,1]
+  [PASS] S4 P3 current_phase=done
+  [PASS] S4 cumulative_score in [0,1]
+      Phase 3 score: 0.9200
+      Final reward:  0.9670
+  [FAIL] S4 /state is_done=True — got None
+  [PASS] S4 /state step_count=3
+  [PASS] S4 /replay has 3 actions
+  [PASS] S4 /replay is_done=True
+  [PASS] S4 step-after-done returns 200
+  [PASS] S4 step-after-done done=True
+
+--- Scenario 5 ---
+  [PASS] S5 /reset returns 200
+  [PASS] S5 has scenario_id
+  [PASS] S5 has scenario_name
+  [PASS] S5 current_phase=identify
+  [PASS] S5 done=False after reset
+  [PASS] S5 has spec_v1
+  [PASS] S5 has spec_v2
+  [PASS] S5 has client_code
+  [PASS] S5 has 3 phases remaining
+  [PASS] S5 P1 /step returns 200
+  [PASS] S5 P1 score in [0,1]
+  [PASS] S5 P1 current_phase=classify
+  [PASS] S5 P1 done=False
+  [PASS] S5 P1 has feedback
+      Phase 1 score: 1.0000
+  [PASS] S5 P2 /step returns 200
+  [PASS] S5 P2 score in [0,1]
+  [PASS] S5 P2 current_phase=migrate
+  [PASS] S5 P2 done=False
+      Phase 2 score: 0.9850
+  [PASS] S5 P3 /step returns 200
+  [PASS] S5 P3 score in [0,1]
+  [PASS] S5 P3 done=True
+  [PASS] S5 final reward in [0,1]
+  [PASS] S5 P3 current_phase=done
+  [PASS] S5 cumulative_score in [0,1]
+      Phase 3 score: 0.8800
+      Final reward:  0.9580
+  [FAIL] S5 /state is_done=True — got None
+  [PASS] S5 /state step_count=3
+  [PASS] S5 /replay has 3 actions
+  [PASS] S5 /replay is_done=True
+  [PASS] S5 step-after-done returns 200
+  [PASS] S5 step-after-done done=True
+
+--- Scenario 6 ---
+  [PASS] S6 /reset returns 200
+  [PASS] S6 has scenario_id
+  [PASS] S6 has scenario_name
+  [PASS] S6 current_phase=identify
+  [PASS] S6 done=False after reset
+  [PASS] S6 has spec_v1
+  [PASS] S6 has spec_v2
+  [PASS] S6 has client_code
+  [PASS] S6 has 3 phases remaining
+  [PASS] S6 P1 /step returns 200
+  [PASS] S6 P1 score in [0,1]
+  [PASS] S6 P1 current_phase=classify
+  [PASS] S6 P1 done=False
+  [PASS] S6 P1 has feedback
+      Phase 1 score: 1.0000
+  [PASS] S6 P2 /step returns 200
+  [PASS] S6 P2 score in [0,1]
+  [PASS] S6 P2 current_phase=migrate
+  [PASS] S6 P2 done=False
+      Phase 2 score: 0.9850
+  [PASS] S6 P3 /step returns 200
+  [PASS] S6 P3 score in [0,1]
+  [PASS] S6 P3 done=True
+  [PASS] S6 final reward in [0,1]
+  [PASS] S6 P3 current_phase=done
+  [PASS] S6 cumulative_score in [0,1]
+      Phase 3 score: 0.8800
+      Final reward:  0.9580
+  [FAIL] S6 /state is_done=True — got None
+  [PASS] S6 /state step_count=3
+  [PASS] S6 /replay has 3 actions
+  [PASS] S6 /replay is_done=True
+  [PASS] S6 step-after-done returns 200
+  [PASS] S6 step-after-done done=True
+
+======================================================================
+PHASE 3: Edge Cases & Error Handling
+======================================================================
+  [PASS] Invalid scenario_id=999 defaults to 1
+  [PASS] scenario_id=0 defaults to 1
+  [PASS] /reset with no param defaults to scenario 1
+  [PASS] Minimal action body accepted
+  [PASS] Minimal action still scores
+
+======================================================================
+PHASE 4: Inference.py Structured Output Format Check
+======================================================================
+  [PASS] emit_start() function defined
+  [PASS] emit_step() function defined
+  [PASS] emit_end() function defined
+  [PASS] [START] format correct
+  [PASS] [STEP] format correct
+  [PASS] [END] format correct
+  [PASS] emit_start uses flush=True
+  [PASS] stdout buffering guard exists
+  [PASS] emit_start called in run_scenario
+  [PASS] emit_step called after phase step
+  [PASS] emit_end called at episode end
+  [PASS] Error path emits START
+  [PASS] Error path emits END
+  [PASS] Validator parses '[START] task=scenario_1'
+  [PASS] Validator parses '[STEP] step=1 reward=0.8500'
+  [PASS] Validator parses '[STEP] step=2 reward=0.7200'
+  [PASS] Validator parses '[STEP] step=3 reward=0.9000'
+  [PASS] Validator parses '[END] task=scenario_1 score=0.9000 steps=3'
+
+======================================================================
+PHASE 5: Score Quality / Discrimination Checks
+======================================================================
+  [PASS] S1 correct answer scores > 0.5
+  [PASS] S1 correct (0.916) > wrong (0.082)
+  [PASS] S2 correct answer scores > 0.5
+  [PASS] S2 correct (0.961) > wrong (0.019)
+  [PASS] S3 correct answer scores > 0.5
+  [PASS] S3 correct (0.997) > wrong (0.007)
+  [PASS] S4 correct answer scores > 0.5
+  [PASS] S4 correct (0.967) > wrong (0.025)
+  [PASS] S5 correct answer scores > 0.5
+  [PASS] S5 correct (0.958) > wrong (0.013)
+  [PASS] S6 correct answer scores > 0.5
+  [PASS] S6 correct (0.958) > wrong (0.019)
+
+======================================================================
+PHASE 6: OpenEnv & Submission Compliance
+======================================================================
+  [PASS] File exists: inference.py
+  [PASS] File exists: openenv.yaml
+  [PASS] File exists: pyproject.toml
+  [PASS] File exists: Dockerfile
+  [PASS] File exists: README.md
+  [PASS] File exists: models.py
+  [PASS] File exists: server/app.py
+  [PASS] File exists: server/graders.py
+  [PASS] File exists: server/scenarios.py
+  [PASS] File exists: server/api_contract_evolution_environment.py
+  [PASS] openenv.yaml has spec_version: 1
+  [PASS] openenv.yaml has name: api_contract_evolution
+  [PASS] openenv.yaml has app entry point
+  [PASS] openenv.yaml has port: 7860
+  [PASS] pyproject.toml has server entry point
+  [PASS] pyproject.toml has openenv-core dependency
+  [PASS] inference.py reads API_BASE_URL from env
+  [PASS] inference.py reads MODEL_NAME from env
+  [PASS] inference.py reads HF_TOKEN from env
+  [PASS] inference.py uses OpenAI client
+  [PASS] inference.py has main() function
+  [PASS] inference.py has __main__ guard
+
+======================================================================
+FINAL TEST REPORT
+======================================================================
+
+  PASSED: 247/253
+  FAILED: 6/253
+
+  [ERROR] 6 TESTS FAILED — FIX BEFORE SUBMITTING
+======================================================================
+
