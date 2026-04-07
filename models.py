@@ -102,10 +102,10 @@ class ApiContractObservation(Observation):
 
     # Feedback from previous step (empty on first step)
     previous_phase_feedback: str = Field(default="")
-    previous_phase_score: float = Field(default=0.0)
+    previous_phase_score: float = Field(default=0.001)
 
     # Running total
-    cumulative_score: float = Field(default=0.0)
+    cumulative_score: float = Field(default=0.001)
 
     # done and reward come from the base Observation class
 

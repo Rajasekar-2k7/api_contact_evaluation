@@ -45,6 +45,19 @@ MAX_TOKENS = 512
 TEMPERATURE = 0.2
 FALLBACK_ACTION = {"action_type": "identify", "changed_fields": [], "change_category": "field_added"}
 
+# Minimum non-zero score — OpenEnv validator requires strictly (0, 1), never 0.0 or 1.0
+_SCORE_MIN = 0.001
+_SCORE_MAX = 0.999
+
+
+def _safe_score(val) -> float:
+    """Clamp any score to strictly (0, 1) — validator rejects 0.0 and 1.0 exactly."""
+    try:
+        v = float(val)
+    except (TypeError, ValueError):
+        v = _SCORE_MIN
+    return max(_SCORE_MIN, min(_SCORE_MAX, v))
+
 # ─── LLM CLIENT (uses OpenAI-compatible API) ──────────────────────────────
 llm_client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
 
@@ -302,12 +315,14 @@ def emit_start(task_name: str):
 
 def emit_step(step_num: int, reward: float):
     """Emit a mandatory [STEP] block required by the Meta validator."""
-    print(f"[STEP] step={step_num} reward={reward:.4f}", flush=True)
+    safe = _safe_score(reward)
+    print(f"[STEP] step={step_num} reward={safe:.4f}", flush=True)
 
 
 def emit_end(task_name: str, score: float, steps: int):
     """Emit the mandatory [END] block required by the Meta validator."""
-    print(f"[END] task={task_name} score={score:.4f} steps={steps}", flush=True)
+    safe = _safe_score(score)
+    print(f"[END] task={task_name} score={safe:.4f} steps={steps}", flush=True)
 
 
 def run_scenario(scenario_id: int) -> Dict:
@@ -334,7 +349,7 @@ def run_scenario(scenario_id: int) -> Dict:
     result1 = step_env(action1)
     result1 = get_obs(result1)
     obs1 = result1
-    phase1_score = obs1.get("previous_phase_score", 0.0)
+    phase1_score = _safe_score(obs1.get("previous_phase_score", _SCORE_MIN))
     step_count += 1
     emit_step(step_count, phase1_score)
     log(f"Phase 1 score: {phase1_score:.4f}")
@@ -342,7 +357,7 @@ def run_scenario(scenario_id: int) -> Dict:
 
     if result1.get("done", False):
         log("Episode ended early.")
-        final = result1.get("reward", 0.0)
+        final = _safe_score(result1.get("reward", _SCORE_MIN))
         emit_end(task_name, final, step_count)
         return {"scenario_id": scenario_id, "final_score": final}
 
@@ -355,7 +370,7 @@ def run_scenario(scenario_id: int) -> Dict:
     result2 = step_env(action2)
     result2 = get_obs(result2)
     obs2 = result2
-    phase2_score = obs2.get("previous_phase_score", 0.0)
+    phase2_score = _safe_score(obs2.get("previous_phase_score", _SCORE_MIN))
     step_count += 1
     emit_step(step_count, phase2_score)
     log(f"Phase 2 score: {phase2_score:.4f}")
@@ -363,7 +378,7 @@ def run_scenario(scenario_id: int) -> Dict:
 
     if result2.get("done", False):
         log("Episode ended after phase 2.")
-        final = result2.get("reward", 0.0)
+        final = _safe_score(result2.get("reward", _SCORE_MIN))
         emit_end(task_name, final, step_count)
         return {"scenario_id": scenario_id, "final_score": final}
 
@@ -376,8 +391,8 @@ def run_scenario(scenario_id: int) -> Dict:
     result3 = step_env(action3)
     result3 = get_obs(result3)
     obs3 = result3
-    final_score = result3.get("reward", 0.0)
-    phase3_score = obs3.get("previous_phase_score", 0.0)
+    final_score = _safe_score(result3.get("reward", _SCORE_MIN))
+    phase3_score = _safe_score(obs3.get("previous_phase_score", _SCORE_MIN))
     step_count += 1
     emit_step(step_count, phase3_score)
     log(f"Phase 3 score: {phase3_score:.4f}")
@@ -417,14 +432,14 @@ def main():
             time.sleep(0.2)  # Optimized pause between scenarios
         except Exception as e:
             log(f"ERROR in scenario {scenario_id}: {e}")
-            # Emit a zero-score END block so the validator still sees output
+            # Emit a minimal-score END block — validator rejects 0.0 scores
             task_name = f"scenario_{scenario_id}"
             emit_start(task_name)
-            emit_step(1, 0.0)
-            emit_end(task_name, 0.0, 1)
+            emit_step(1, _SCORE_MIN)
+            emit_end(task_name, _SCORE_MIN, 1)
             all_results.append({
                 "scenario_id": scenario_id,
-                "final_score": 0.0,
+                "final_score": _SCORE_MIN,
                 "error": str(e)
             })
 
