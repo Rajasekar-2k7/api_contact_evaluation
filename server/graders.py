@@ -110,6 +110,8 @@ def grade_phase_1_identify(action_data: Dict, ground_truth: Dict) -> Dict:
             keyword_bonus = (keyword_matches / len(keywords)) * 0.15
 
     total = min(1.0, core_score + keyword_bonus)
+    # Ensure score is strictly within (0, 1) for OpenEnv validator
+    total = max(0.001, min(0.999, total))
 
     return {
         "score": round(total, 4),
@@ -191,6 +193,8 @@ def grade_phase_2_classify(action_data: Dict, ground_truth: Dict) -> Dict:
         severity_score * 0.15 +
         confidence_score * 0.15
     )
+    # Ensure score is strictly within (0, 1) for OpenEnv validator
+    total = max(0.001, min(0.999, total))
 
     return {
         "score": round(total, 4),
@@ -405,6 +409,8 @@ def grade_phase_3_migrate(action_data: Dict, ground_truth: Dict) -> Dict:
         sequence_score * 0.20 +
         combined_meta_score * 0.10
     )
+    # Ensure score is strictly within (0, 1) for OpenEnv validator
+    total = max(0.001, min(0.999, total))
 
     return {
         "score": round(total, 4),
@@ -432,4 +438,6 @@ def compute_episode_score(phase_scores: Dict[str, float]) -> float:
     p3 = phase_scores.get("migrate", 0.0)
 
     total = (p1 * 0.30) + (p2 * 0.40) + (p3 * 0.30)
+    # Ensure score is strictly within (0, 1) for OpenEnv validator
+    total = max(0.001, min(0.999, total))
     return round(total, 4)
