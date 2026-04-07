@@ -21,11 +21,19 @@ HOW TO RUN (Windows Command Prompt):
 """
 
 import os
+import sys
 import json
 import time
 import requests
 from openai import OpenAI
 from typing import Dict, Any, List
+
+# Guarantee stdout is never buffered — critical for the Meta validator
+# which reads structured blocks directly from the process's stdout pipe.
+try:
+    sys.stdout.reconfigure(line_buffering=True)  # type: ignore[attr-defined]
+except AttributeError:
+    pass  # Python < 3.7 fallback (line_buffering not available)
 
 # ─── CONFIGURATION ────────────────────────────────────────────────────────
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api-inference.huggingface.co/v1")
@@ -287,65 +295,96 @@ def call_llm(prompt: str) -> Dict:
     return FALLBACK_ACTION
 
 
+def emit_start(task_name: str):
+    """Emit the mandatory [START] block required by the Meta validator."""
+    print(f"[START] task={task_name}", flush=True)
+
+
+def emit_step(step_num: int, reward: float):
+    """Emit a mandatory [STEP] block required by the Meta validator."""
+    print(f"[STEP] step={step_num} reward={reward:.4f}", flush=True)
+
+
+def emit_end(task_name: str, score: float, steps: int):
+    """Emit the mandatory [END] block required by the Meta validator."""
+    print(f"[END] task={task_name} score={score:.4f} steps={steps}", flush=True)
+
+
 def run_scenario(scenario_id: int) -> Dict:
     """Run one complete episode (all 3 phases) for a scenario."""
     log(f"\n{'='*60}")
     log(f"Running Scenario {scenario_id}")
     log(f"{'='*60}")
-    
+
+    task_name = f"scenario_{scenario_id}"
+    emit_start(task_name)
+    step_count = 0
+
     # Phase 1: Identify
     log("Phase 1: Resetting environment...")
     result0 = reset_env(scenario_id)
     obs0 = result0
     log(f"Scenario: {obs0.get('scenario_name', '')} | Difficulty: {obs0.get('difficulty', '')}")
-    
+
     prompt1 = build_phase1_prompt(obs0)
     log("Phase 1: Calling LLM to identify changes...")
     action1 = call_llm(prompt1)
     log(f"Phase 1 action: {json.dumps(action1, indent=2)}")
-    
+
     result1 = step_env(action1)
     result1 = get_obs(result1)
     obs1 = result1
     phase1_score = obs1.get("previous_phase_score", 0.0)
+    step_count += 1
+    emit_step(step_count, phase1_score)
     log(f"Phase 1 score: {phase1_score:.4f}")
     log(f"Feedback: {obs1.get('previous_phase_feedback', '')}")
-    
+
     if result1.get("done", False):
         log("Episode ended early.")
-        return {"scenario_id": scenario_id, "final_score": result1.get("reward", 0.0)}
-    
+        final = result1.get("reward", 0.0)
+        emit_end(task_name, final, step_count)
+        return {"scenario_id": scenario_id, "final_score": final}
+
     # Phase 2: Classify
     log("\nPhase 2: Calling LLM to classify impact...")
     prompt2 = build_phase2_prompt(obs1)
     action2 = call_llm(prompt2)
     log(f"Phase 2 action: {json.dumps(action2, indent=2)}")
-    
+
     result2 = step_env(action2)
     result2 = get_obs(result2)
     obs2 = result2
     phase2_score = obs2.get("previous_phase_score", 0.0)
+    step_count += 1
+    emit_step(step_count, phase2_score)
     log(f"Phase 2 score: {phase2_score:.4f}")
     log(f"Feedback: {obs2.get('previous_phase_feedback', '')}")
-    
+
     if result2.get("done", False):
         log("Episode ended after phase 2.")
-        return {"scenario_id": scenario_id, "final_score": result2.get("reward", 0.0)}
-    
+        final = result2.get("reward", 0.0)
+        emit_end(task_name, final, step_count)
+        return {"scenario_id": scenario_id, "final_score": final}
+
     # Phase 3: Migrate
     log("\nPhase 3: Calling LLM to propose migration plan...")
     prompt3 = build_phase3_prompt(obs2)
     action3 = call_llm(prompt3)
     log(f"Phase 3 action: {json.dumps(action3, indent=2)}")
-    
+
     result3 = step_env(action3)
     result3 = get_obs(result3)
     obs3 = result3
     final_score = result3.get("reward", 0.0)
     phase3_score = obs3.get("previous_phase_score", 0.0)
+    step_count += 1
+    emit_step(step_count, phase3_score)
     log(f"Phase 3 score: {phase3_score:.4f}")
     log(f"FINAL EPISODE SCORE: {final_score:.4f}")
-    
+
+    emit_end(task_name, final_score, step_count)
+
     return {
         "scenario_id": scenario_id,
         "scenario_name": obs0.get("scenario_name", ""),
@@ -363,14 +402,14 @@ def run_scenario(scenario_id: int) -> Dict:
 
 def main():
     start_time = time.time()
-    print("\n" + "="*70)
-    print("API CONTRACT EVOLUTION — BASELINE INFERENCE")
-    print(f"Model: {MODEL_NAME}")
-    print(f"Environment: {ENV_URL}")
-    print("="*70)
+    print("\n" + "="*70, flush=True)
+    print("API CONTRACT EVOLUTION — BASELINE INFERENCE", flush=True)
+    print(f"Model: {MODEL_NAME}", flush=True)
+    print(f"Environment: {ENV_URL}", flush=True)
+    print("="*70, flush=True)
 
     all_results = []
-    
+
     for scenario_id in [1, 2, 3, 4, 5, 6]:
         try:
             result = run_scenario(scenario_id)
@@ -378,6 +417,11 @@ def main():
             time.sleep(0.2)  # Optimized pause between scenarios
         except Exception as e:
             log(f"ERROR in scenario {scenario_id}: {e}")
+            # Emit a zero-score END block so the validator still sees output
+            task_name = f"scenario_{scenario_id}"
+            emit_start(task_name)
+            emit_step(1, 0.0)
+            emit_end(task_name, 0.0, 1)
             all_results.append({
                 "scenario_id": scenario_id,
                 "final_score": 0.0,
@@ -386,23 +430,23 @@ def main():
 
     # Print summary
     elapsed = time.time() - start_time
-    print("\n" + "="*70)
-    print("RESULTS SUMMARY")
-    print("="*70)
-    
+    print("\n" + "="*70, flush=True)
+    print("RESULTS SUMMARY", flush=True)
+    print("="*70, flush=True)
+
     total = 0.0
     for r in all_results:
         score = r.get("final_score", 0.0)
         total += score
         name = r.get("scenario_name", f"Scenario {r['scenario_id']}")
         difficulty = r.get("difficulty", "")
-        print(f"  Scenario {r['scenario_id']} ({difficulty:6s}): {score:.4f}  — {name}")
-    
+        print(f"  Scenario {r['scenario_id']} ({difficulty:6s}): {score:.4f}  — {name}", flush=True)
+
     avg = total / len(all_results)
-    print(f"\n  AVERAGE SCORE: {avg:.4f}")
-    print(f"  RUNTIME: {elapsed:.1f}s ({elapsed/60:.1f} minutes)")
-    print("="*70)
-    
+    print(f"\n  AVERAGE SCORE: {avg:.4f}", flush=True)
+    print(f"  RUNTIME: {elapsed:.1f}s ({elapsed/60:.1f} minutes)", flush=True)
+    print("="*70, flush=True)
+
     # Save results to JSON
     with open("baseline_scores.json", "w") as f:
         json.dump({
@@ -411,7 +455,7 @@ def main():
             "runtime_seconds": elapsed,
             "results": all_results
         }, f, indent=2)
-    print("Results saved to: baseline_scores.json")
+    print("Results saved to: baseline_scores.json", flush=True)
 
 
 if __name__ == "__main__":
