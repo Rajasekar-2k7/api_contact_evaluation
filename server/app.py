@@ -79,6 +79,12 @@ def step_env(action: ApiContractAction):
     return obs.model_dump()
 
 
+@custom_router.get("/state")
+def get_state():
+    """Return the full environment state including custom fields."""
+    return global_env.state.model_dump()
+
+
 # ─── BONUS ENDPOINTS (Section 6) ───────────────────────────────────────
 
 from .scenarios import SCENARIOS
@@ -142,7 +148,7 @@ for route in app.router.routes:
     path = getattr(route, "path", None)
     if path in custom_paths:
         # If this is one of our custom routes and we haven't added it yet, put it at the front
-        if hasattr(route, "name") and route.name in ["reset_env", "step_env", "health_check", "replay_episode", "list_scenarios"]:
+        if hasattr(route, "name") and route.name in ["reset_env", "step_env", "get_state", "health_check", "replay_episode", "list_scenarios"]:
             if path not in seen_custom:
                 new_routes.insert(0, route)
                 seen_custom.add(path)
