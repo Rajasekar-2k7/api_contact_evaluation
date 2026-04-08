@@ -46,8 +46,8 @@ TEMPERATURE = 0.2
 FALLBACK_ACTION = {"action_type": "identify", "changed_fields": [], "change_category": "field_added"}
 
 # Minimum non-zero score — OpenEnv validator requires strictly (0, 1), never 0.0 or 1.0
-_SCORE_MIN = 0.001
-_SCORE_MAX = 0.999
+_SCORE_MIN = 0.01
+_SCORE_MAX = 0.99
 
 
 def _safe_score(val) -> float:

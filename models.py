@@ -102,10 +102,10 @@ class ApiContractObservation(Observation):
 
     # Feedback from previous step (empty on first step)
     previous_phase_feedback: str = Field(default="")
-    previous_phase_score: float = Field(default=0.001)
+    previous_phase_score: float = Field(default=0.01)
 
     # Running total
-    cumulative_score: float = Field(default=0.001)
+    cumulative_score: float = Field(default=0.01)
 
     # done and reward come from the base Observation class
 
@@ -123,6 +123,6 @@ class ApiContractState(State):
     difficulty: str = Field(default="easy")
     current_phase: str = Field(default="identify")
     step_count: int = Field(default=0)
-    total_score: float = Field(default=0.0)
+    total_score: float = Field(default=0.01)  # Never 0.0 — validator rejects exact 0.0
     phase_scores: Dict[str, float] = Field(default_factory=dict)
     is_done: bool = Field(default=False)

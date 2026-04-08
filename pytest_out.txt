@@ -1,0 +1,31 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\RAJASEKAR\AppData\Local\Programs\Python\Python311\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\RAJASEKAR\OneDrive\Desktop\api_contract_evolution\hf_space_repo
+configfile: pyproject.toml
+plugins: anyio-4.12.1
+collecting ... collected 5 items / 2 errors
+
+=================================== ERRORS ====================================
+____________________ ERROR collecting tests/stress_test.py ____________________
+ImportError while importing test module 'C:\Users\RAJASEKAR\OneDrive\Desktop\api_contract_evolution\hf_space_repo\tests\stress_test.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\stress_test.py:3: in <module>
+    from server.api_contract_evolution_environment import ApiContractEvolutionEnvironment
+E   ModuleNotFoundError: No module named 'server'
+___________________ ERROR collecting tests/test_output.txt ____________________
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\pathlib.py:1059: in read_text
+    return f.read()
+           ^^^^^^^^
+<frozen codecs>:322: in decode
+    ???
+E   UnicodeDecodeError: 'utf-8' codec can't decode byte 0x97 in position 1946: invalid start byte
+=========================== short test summary info ===========================
+ERROR tests/stress_test.py
+ERROR tests/test_output.txt - UnicodeDecodeError: 'utf-8' codec can't decode ...
+!!!!!!!!!!!!!!!!!!! Interrupted: 2 errors during collection !!!!!!!!!!!!!!!!!!!
+============================= 2 errors in 14.20s ==============================

@@ -17,6 +17,8 @@ from .graders import (
     grade_phase_2_classify,
     grade_phase_3_migrate,
     compute_episode_score,
+    _clamp,
+    _SCORE_MIN,
 )
 from typing import Dict, Any
 
@@ -84,7 +86,7 @@ class ApiContractEvolutionEnvironment(Environment):
 
         return ApiContractObservation(
             done=False,
-            reward=0.001,
+            reward=0.01,
             scenario_id=self._scenario_id,
             scenario_name=scenario["name"],
             difficulty=scenario["difficulty"],
@@ -97,8 +99,8 @@ class ApiContractEvolutionEnvironment(Environment):
             client_personas=scenario["client_personas"],
             dependency_graph=scenario["dependency_graph"],
             previous_phase_feedback="",
-            previous_phase_score=0.001,
-            cumulative_score=0.001,
+            previous_phase_score=0.01,
+            cumulative_score=0.01,
         )
 
     def step(self, action: ApiContractAction) -> ApiContractObservation:  # type: ignore[override]
@@ -110,7 +112,7 @@ class ApiContractEvolutionEnvironment(Environment):
             scenario = SCENARIOS[self._scenario_id]
             return ApiContractObservation(
                 done=True,
-                reward=0.001,
+                reward=0.01,
                 scenario_id=self._scenario_id,
                 scenario_name=scenario["name"],
                 difficulty=scenario["difficulty"],
@@ -170,11 +172,12 @@ class ApiContractEvolutionEnvironment(Environment):
             remaining = PHASE_ORDER[self._current_phase_index :]
             final_score = phase_score  # Partial reward for this phase
 
-        cumulative = (
-            compute_episode_score(self._phase_scores)
-            if is_done
-            else (sum(self._phase_scores.values()) / len(PHASE_ORDER))
-        )
+        if is_done:
+            cumulative = compute_episode_score(self._phase_scores)
+        else:
+            # Partial cumulative — clamp to avoid 0.0 when only 1 phase scored
+            raw_cumul = sum(self._phase_scores.values()) / len(PHASE_ORDER)
+            cumulative = _clamp(raw_cumul)
 
         return ApiContractObservation(
             done=is_done,

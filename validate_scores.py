@@ -32,14 +32,14 @@ def check(label, val):
 
 # ── Test _clamp edge cases ──────────────────────────────────────────────
 print("=== _clamp edge cases ===")
-for val in [0.0, -1.0, -999.0, 1.0, 2.0, 999.0, 0.5, 0.001, 0.999]:
+for val in [0.0, -1.0, -999.0, 1.0, 2.0, 999.0, 0.5, 0.01, 0.99]:
     result = _clamp(val)
     check(f"_clamp({val})", result)
 
 # ── Test compute_episode_score extremes ─────────────────────────────────
 print("\n=== compute_episode_score extremes ===")
-for p1, p2, p3 in [(0.0, 0.0, 0.0), (1.0, 1.0, 1.0), (0.001, 0.001, 0.001),
-                   (0.999, 0.999, 0.999), (0.5, 0.5, 0.5)]:
+for p1, p2, p3 in [(0.0, 0.0, 0.0), (1.0, 1.0, 1.0), (0.01, 0.01, 0.01),
+                   (0.99, 0.99, 0.99), (0.5, 0.5, 0.5)]:
     s = compute_episode_score({"identify": p1, "classify": p2, "migrate": p3})
     check(f"episode({p1},{p2},{p3})", s)
 
