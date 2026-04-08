@@ -1,5 +1,5 @@
 # server/graders.py — Scoring logic for all 3 phases
-# ALL scores are STRICTLY between 0.001 and 0.999 — NEVER 0.0 or 1.0
+# ALL scores are STRICTLY between 0.01 and 0.99 — NEVER 0.0 or 1.0
 # The OpenEnv validator REJECTS scores of exactly 0.0 or 1.0.
 # _clamp() is applied at EVERY score output point: intermediates AND totals.
 
@@ -86,7 +86,7 @@ def grade_phase_1_identify(action_data: Dict, ground_truth: Dict) -> Dict:
       - change_category correctness (with synonyms): 40%
 
     Keyword bonus only applies when core score >= 0.5 to prevent rewarding hallucination.
-    Max score: 0.999 (never 1.0)
+    Max score: 0.99 (never 1.0)
     """
     # What the agent said changed
     agent_fields = set(f.lower().strip() for f in action_data.get("changed_fields", []))
@@ -105,14 +105,14 @@ def grade_phase_1_identify(action_data: Dict, ground_truth: Dict) -> Dict:
                     matched.add(gf)
         correct = len(matched)
         if len(agent_fields) == 0:
-            raw_field_score = 0.0
+            raw_field_score = _SCORE_MIN
         else:
             precision = correct / len(agent_fields)
             recall = correct / len(gt_fields)
             if precision + recall > 0:
                 raw_field_score = 2 * precision * recall / (precision + recall)
             else:
-                raw_field_score = 0.0
+                raw_field_score = _SCORE_MIN
     field_score = _clamp(raw_field_score)
 
     # Category score (40%) with full synonym matching
@@ -122,14 +122,14 @@ def grade_phase_1_identify(action_data: Dict, ground_truth: Dict) -> Dict:
     agent_category = normalize_category(agent_category_raw)
     gt_category = normalize_category(gt_category_raw)
     # Use 0.9 instead of 1.0 to avoid ceiling — clamped anyway
-    raw_category_score = 0.9 if agent_category == gt_category else 0.0
+    raw_category_score = 0.9 if agent_category == gt_category else _SCORE_MIN
     category_score = _clamp(raw_category_score)
 
     core_score = _clamp((field_score * 0.60) + (category_score * 0.40))
 
     # Keyword bonus (max 0.15) — ONLY applied when core answer is already correct (>=0.5)
     # This prevents rewarding hallucination
-    keyword_bonus = 0.0
+    keyword_bonus = _SCORE_MIN
     if core_score >= 0.5:
         agent_reason = action_data.get("reason", "").lower()
         keywords = ground_truth.get("required_change_keywords", [])
@@ -166,7 +166,7 @@ def grade_phase_2_classify(action_data: Dict, ground_truth: Dict) -> Dict:
 
     Confidence calibration: rewards being right AND confident.
     Penalizes being wrong AND confident (overconfidence).
-    Max score: 0.999 (never 1.0)
+    Max score: 0.99 (never 1.0)
     """
     gt_breaking = ground_truth.get("is_breaking", False)
     gt_affected = [c.lower() for c in ground_truth.get("affected_clients", [])]
@@ -180,9 +180,9 @@ def grade_phase_2_classify(action_data: Dict, ground_truth: Dict) -> Dict:
     agent_confidence = _clamp(float(action_data.get("confidence", 0.5)))
 
     # 1. Breaking detection (35%)
-    # Use 0.9 for correct, 0.0 for wrong — never raw 1.0
+    # Use 0.9 for correct, _SCORE_MIN for wrong — never raw 1.0
     is_correct = (agent_breaking == gt_breaking)
-    raw_breaking_score = 0.9 if is_correct else 0.0
+    raw_breaking_score = 0.9 if is_correct else _SCORE_MIN
     breaking_score = _clamp(raw_breaking_score)
 
     # 2. Client identification using fuzzy F1 score (35%)
@@ -197,12 +197,12 @@ def grade_phase_2_classify(action_data: Dict, ground_truth: Dict) -> Dict:
         raw_client_score = 0.85 if len(agent_affected) == 0 else 0.2
     else:
         true_positives = sum(1 for a in agent_affected if client_match(a, gt_affected))
-        precision = true_positives / len(agent_affected) if agent_affected else 0.0
+        precision = true_positives / len(agent_affected) if agent_affected else _SCORE_MIN
         recall = true_positives / len(gt_affected)
         if precision + recall > 0:
             raw_client_score = 2 * precision * recall / (precision + recall)
         else:
-            raw_client_score = 0.0
+            raw_client_score = _SCORE_MIN
     client_score = _clamp(raw_client_score)
 
     # 3. Severity accuracy (15%)
@@ -216,7 +216,7 @@ def grade_phase_2_classify(action_data: Dict, ground_truth: Dict) -> Dict:
     # If WRONG: score = max(0, 0.5 - confidence) (reward uncertainty when wrong, but cap gain)
     # This prevents gaming by always setting confidence=0.01
     if is_correct:
-        # agent_confidence already clamped to (0.001, 0.999)
+        # agent_confidence already clamped to (0.01, 0.99)
         confidence_score = agent_confidence
     else:
         # Wrong answer: reward humility but cap the max gain
@@ -312,7 +312,7 @@ def grade_phase_3_migrate(action_data: Dict, ground_truth: Dict) -> Dict:
       - Sequencing & traffic shifting awareness: 20%
       - Timeline & SemVer awareness: 10%
 
-    Max score: 0.999 (never 1.0)
+    Max score: 0.99 (never 1.0)
     """
     migration_steps = action_data.get("migration_steps", [])
     risks = action_data.get("migration_risks", [])
@@ -399,7 +399,7 @@ def grade_phase_3_migrate(action_data: Dict, ground_truth: Dict) -> Dict:
     has_parallel = _text_contains_any(all_text, PARALLEL_SYNONYMS)
 
     if is_breaking:
-        points = 0.0
+        points = _SCORE_MIN
         if has_sequence:
             points += 0.4
         if has_traffic_shift:
@@ -428,7 +428,7 @@ def grade_phase_3_migrate(action_data: Dict, ground_truth: Dict) -> Dict:
     timeline_math_score = _clamp(raw_timeline_math)
 
     # SemVer — broader synonym matching
-    raw_semver = 0.0
+    raw_semver = _SCORE_MIN
     if is_breaking:
         breaking_semver = [
             "major version", "v2", "v 2", "2.0", "major bump",
@@ -476,7 +476,7 @@ def compute_episode_score(phase_scores: Dict[str, float]) -> float:
     Phase 2 (classify):  40% weight
     Phase 3 (migrate):   30% weight
 
-    Returns a score strictly in (0.001, 0.999) — NEVER 0.0 or 1.0.
+    Returns a score strictly in (0.01, 0.99) — NEVER 0.0 or 1.0.
     """
     # Clamp each individual phase score before weighting (defensive)
     p1 = _clamp(phase_scores.get("identify", _SCORE_MIN))

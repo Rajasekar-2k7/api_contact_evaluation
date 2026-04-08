@@ -125,7 +125,7 @@ class ApiContractEvolutionEnvironment(Environment):
                 client_personas=scenario["client_personas"],
                 dependency_graph=scenario["dependency_graph"],
                 previous_phase_feedback="Episode already finished.",
-                previous_phase_score=0.001,
+                previous_phase_score=0.01,
                 cumulative_score=compute_episode_score(self._phase_scores),
             )
 
@@ -228,7 +228,7 @@ class ApiContractEvolutionEnvironment(Environment):
             if grade["field_score"] < 0.5:
                 lines.append(f"  - You identified: {grade['agent_fields']}")
                 lines.append(f"  - Actual changes: {grade['true_fields']}")
-            if grade["category_score"] == 0.0:
+            if grade["category_score"] <= 0.01:
                 lines.append(f"  - You said category: '{grade['agent_category']}'")
                 lines.append(f"  - Correct category: '{grade['true_category']}'")
 
