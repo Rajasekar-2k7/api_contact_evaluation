@@ -73,7 +73,7 @@ SCENARIOS = {
             "change_category": "field_added",
             "is_breaking": False,
             "affected_clients": [],
-            "severity": 0.0,
+            "severity": 0.01,
             "reason": (
                 "Adding an optional field is backwards compatible. "
                 "All existing clients that do not send 'description' "
@@ -274,7 +274,7 @@ SCENARIOS = {
             "change_category": "behavior_changed",
             "is_breaking": True,
             "affected_clients": ["mobile_app", "web_dashboard", "partner_api"],
-            "severity": 1.0,
+            "severity": 0.99,
             "reason": (
                 "All clients built around buggy cents behavior. "
                 "mobile_app and web_dashboard divide by 100 — will show cents-value as dollars. "

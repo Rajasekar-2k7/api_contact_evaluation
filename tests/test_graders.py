@@ -27,7 +27,7 @@ SCENARIO_1_GT = {
     "change_category": "field_added",
     "is_breaking": False,
     "affected_clients": [],
-    "severity": 0.0,
+    "severity": 0.01,
     "required_change_keywords": ["optional", "backwards compatible", "no action"],
     "required_migration_keywords": ["no migration needed", "optional", "non-breaking"],
     "deprecation_window_days": 0,
@@ -39,7 +39,7 @@ SCENARIO_3_GT = {
     "change_category": "behavior_changed",
     "is_breaking": True,
     "affected_clients": ["mobile_app", "web_dashboard", "partner_api"],
-    "severity": 1.0,
+    "severity": 0.99,
     "required_change_keywords": ["cents", "dollars", "divide by 100", "behavior", "all clients"],
     "required_migration_keywords": [
         "migrate clients first", "versioned rollout", "parallel",
