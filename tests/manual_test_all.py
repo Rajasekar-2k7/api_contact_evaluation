@@ -139,7 +139,7 @@ for scenario_id in range(1, 7):
     test(f"S{scenario_id} P1 /step returns 200", r.status_code == 200, f"got {r.status_code}")
     obs = r.json()
     p1_score = obs.get("previous_phase_score", -1)
-    test(f"S{scenario_id} P1 score in [0,1]", 0.0 <= p1_score <= 1.0, f"got {p1_score}")
+    test(f"S{scenario_id} P1 score strictly in (0,1)", 0.0 < p1_score < 1.0, f"got {p1_score} — must be strictly (0,1), never 0.0 or 1.0")
     test(f"S{scenario_id} P1 current_phase=classify", obs.get("current_phase") == "classify", f"got {obs.get('current_phase')}")
     test(f"S{scenario_id} P1 done=False", obs.get("done") == False, f"got {obs.get('done')}")
     test(f"S{scenario_id} P1 has feedback", len(obs.get("previous_phase_feedback", "")) > 0, "no feedback")
@@ -150,7 +150,7 @@ for scenario_id in range(1, 7):
     test(f"S{scenario_id} P2 /step returns 200", r.status_code == 200, f"got {r.status_code}")
     obs = r.json()
     p2_score = obs.get("previous_phase_score", -1)
-    test(f"S{scenario_id} P2 score in [0,1]", 0.0 <= p2_score <= 1.0, f"got {p2_score}")
+    test(f"S{scenario_id} P2 score strictly in (0,1)", 0.0 < p2_score < 1.0, f"got {p2_score} — must be strictly (0,1), never 0.0 or 1.0")
     test(f"S{scenario_id} P2 current_phase=migrate", obs.get("current_phase") == "migrate", f"got {obs.get('current_phase')}")
     test(f"S{scenario_id} P2 done=False", obs.get("done") == False, f"got {obs.get('done')}")
     print(f"      Phase 2 score: {p2_score:.4f}")
@@ -161,11 +161,11 @@ for scenario_id in range(1, 7):
     obs = r.json()
     p3_score = obs.get("previous_phase_score", -1)
     final_score = obs.get("reward", -1)
-    test(f"S{scenario_id} P3 score in [0,1]", 0.0 <= p3_score <= 1.0, f"got {p3_score}")
+    test(f"S{scenario_id} P3 score strictly in (0,1)", 0.0 < p3_score < 1.0, f"got {p3_score} — must be strictly (0,1), never 0.0 or 1.0")
     test(f"S{scenario_id} P3 done=True", obs.get("done") == True, f"got {obs.get('done')}")
-    test(f"S{scenario_id} final reward in [0,1]", 0.0 <= final_score <= 1.0, f"got {final_score}")
+    test(f"S{scenario_id} final reward strictly in (0,1)", 0.0 < final_score < 1.0, f"got {final_score} — must be strictly (0,1), never 0.0 or 1.0")
     test(f"S{scenario_id} P3 current_phase=done", obs.get("current_phase") == "done", f"got {obs.get('current_phase')}")
-    test(f"S{scenario_id} cumulative_score in [0,1]", 0.0 <= obs.get("cumulative_score", -1) <= 1.0, f"got {obs.get('cumulative_score')}")
+    test(f"S{scenario_id} cumulative_score strictly in (0,1)", 0.0 < obs.get("cumulative_score", -1) < 1.0, f"got {obs.get('cumulative_score')} — must be strictly (0,1)")
     print(f"      Phase 3 score: {p3_score:.4f}")
     print(f"      Final reward:  {final_score:.4f}")
 
@@ -295,6 +295,11 @@ for sid in range(1, 7):
     
     ep = compute_episode_score({"identify": p1["score"], "classify": p2["score"], "migrate": p3["score"]})
     
+    # Strict (0, 1) bounds — validator rejects exactly 0.0 and 1.0
+    test(f"S{sid} P1 score strictly in (0,1)", 0.0 < p1["score"] < 1.0, f"got {p1['score']}")
+    test(f"S{sid} P2 score strictly in (0,1)", 0.0 < p2["score"] < 1.0, f"got {p2['score']}")
+    test(f"S{sid} P3 score strictly in (0,1)", 0.0 < p3["score"] < 1.0, f"got {p3['score']}")
+    test(f"S{sid} episode strictly in (0,1)", 0.0 < ep < 1.0, f"got {ep}")
     test(f"S{sid} correct answer scores > 0.5", ep > 0.5, f"got {ep:.4f} (P1={p1['score']:.4f} P2={p2['score']:.4f} P3={p3['score']:.4f})")
     
     # Test that a completely wrong answer scores < correct

@@ -137,7 +137,8 @@ def grade_phase_1_identify(action_data: Dict, ground_truth: Dict) -> Dict:
             keyword_matches = sum(
                 1 for kw in keywords if kw.lower() in agent_reason
             )
-            keyword_bonus = (keyword_matches / len(keywords)) * 0.15
+            raw_bonus = (keyword_matches / len(keywords)) * 0.15
+            keyword_bonus = max(_SCORE_MIN, raw_bonus)  # floor to avoid 0.0
 
     # Cap at 0.99 — never allow 1.0
     total = _safe_round(min(_SCORE_MAX, core_score + keyword_bonus))
