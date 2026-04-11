@@ -1,5 +1,9 @@
 import time
 import concurrent.futures
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from server.api_contract_evolution_environment import ApiContractEvolutionEnvironment
 from models import ApiContractAction
 
